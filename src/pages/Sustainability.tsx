@@ -69,7 +69,7 @@ export default function Sustainability() {
         <h3 className="font-display text-lg font-semibold">Tips to Level Up</h3>
         {[
           { icon: '🥗', tip: 'Use spinach in a smoothie before it wilts' },
-          { icon: '🍞', tip: 'Freeze bread if you won't finish it in 2 days' },
+          { icon: '🍞', tip: "Freeze bread if you won't finish it in 2 days" },
           { icon: '📋', tip: 'Plan meals around expiring items first' },
         ].map(({ icon, tip }) => (
           <div key={tip} className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-sm">
