@@ -14,7 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      food_items: {
+        Row: {
+          added_by: string
+          added_date: string
+          category: string
+          consumed: number
+          cost: number | null
+          created_at: string
+          expiry_date: string
+          id: string
+          name: string
+          quantity: number
+          unit: string
+        }
+        Insert: {
+          added_by?: string
+          added_date?: string
+          category?: string
+          consumed?: number
+          cost?: number | null
+          created_at?: string
+          expiry_date: string
+          id?: string
+          name: string
+          quantity?: number
+          unit?: string
+        }
+        Update: {
+          added_by?: string
+          added_date?: string
+          category?: string
+          consumed?: number
+          cost?: number | null
+          created_at?: string
+          expiry_date?: string
+          id?: string
+          name?: string
+          quantity?: number
+          unit?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
