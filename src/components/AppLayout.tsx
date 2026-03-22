@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, PlusCircle, BarChart3, ChefHat, Bell, Leaf, Users } from 'lucide-react';
 import { useFridge } from '@/lib/fridge-context';
+import FridgeChatbot from '@/components/FridgeChatbot';
 
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
