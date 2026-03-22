@@ -10,9 +10,22 @@ import BarcodeScanner, { ScannedProduct } from '@/components/BarcodeScanner';
 
 const categories: FoodCategory[] = ['dairy', 'produce', 'meat', 'grains', 'beverages', 'snacks', 'condiments', 'frozen', 'other'];
 
-function defaultExpiry(daysFromNow = 7): string {
+// Category-based default shelf-life in days
+const DEFAULT_SHELF_LIFE: Record<FoodCategory, number> = {
+  dairy: 7,
+  produce: 5,
+  meat: 3,
+  grains: 30,
+  beverages: 14,
+  snacks: 60,
+  condiments: 90,
+  frozen: 180,
+  other: 7,
+};
+
+function defaultExpiry(category: FoodCategory = 'other'): string {
   const d = new Date();
-  d.setDate(d.getDate() + daysFromNow);
+  d.setDate(d.getDate() + DEFAULT_SHELF_LIFE[category]);
   return d.toISOString().split('T')[0];
 }
 
@@ -54,35 +67,23 @@ export default function AddFood() {
     }
   };
 
-  const handleProductScanned = async (product: ScannedProduct) => {
+  const handleProductScanned = (product: ScannedProduct) => {
     setShowScanner(false);
+    const cat = (product.category as FoodCategory) || 'other';
 
     if (product.found && product.name) {
-      // Auto-add the scanned product with a default 7-day expiry
-      try {
-        await addItem({
-          name: product.name,
-          quantity: 1,
-          unit: 'pieces',
-          expiryDate: defaultExpiry(7),
-          category: (product.category as FoodCategory) || 'other',
-          addedBy: 'You',
-        });
-        setAdded(true);
-        toast.success(`${product.name} added to your fridge!`);
-        setTimeout(resetForm, 1500);
-      } catch {
-        toast.error('Failed to save item. Please try again.');
-        // Pre-fill form as fallback
-        setName(product.name);
-        if (product.category) setCategory(product.category as FoodCategory);
-        setExpiryDate(defaultExpiry(7));
-      }
+      // Pre-fill form so the user can confirm or adjust the expiry date
+      setName(product.name);
+      setCategory(cat);
+      setExpiryDate(defaultExpiry(cat));
+      setManualPrompt(`Found "${product.name}". Please confirm or adjust the expiry date, then tap Add to Fridge.`);
+      toast.success(`Found: ${product.name} — please confirm expiry date`);
     } else {
-      // Product not found — pre-fill what we can and prompt manual entry
-      setManualPrompt(`Barcode ${product.barcode} not found in our database. Please fill in the details below.`);
+      // Product not found — prompt full manual entry with a sensible default expiry
       setName('');
-      setExpiryDate(defaultExpiry(7));
+      setCategory('other');
+      setExpiryDate(defaultExpiry('other'));
+      setManualPrompt(`Barcode ${product.barcode} not found in our database. Please fill in the details below.`);
       toast.info('Please add the product details manually.');
     }
   };
