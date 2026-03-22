@@ -10,9 +10,22 @@ import BarcodeScanner, { ScannedProduct } from '@/components/BarcodeScanner';
 
 const categories: FoodCategory[] = ['dairy', 'produce', 'meat', 'grains', 'beverages', 'snacks', 'condiments', 'frozen', 'other'];
 
-function defaultExpiry(daysFromNow = 7): string {
+// Category-based default shelf-life in days
+const DEFAULT_SHELF_LIFE: Record<FoodCategory, number> = {
+  dairy: 7,
+  produce: 5,
+  meat: 3,
+  grains: 30,
+  beverages: 14,
+  snacks: 60,
+  condiments: 90,
+  frozen: 180,
+  other: 7,
+};
+
+function defaultExpiry(category: FoodCategory = 'other'): string {
   const d = new Date();
-  d.setDate(d.getDate() + daysFromNow);
+  d.setDate(d.getDate() + DEFAULT_SHELF_LIFE[category]);
   return d.toISOString().split('T')[0];
 }
 
