@@ -80,7 +80,7 @@ export default function BarcodeScanner({ onProductFound, onClose }: BarcodeScann
           () => {}
         );
         setStatus('scanning');
-      } catch (err: any) {
+        isRunningRef.current = true;
         const msg = err?.message || String(err);
         if (/permission/i.test(msg)) {
           setErrorMsg('Camera permission denied. Please allow camera access and try again.');
