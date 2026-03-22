@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { MessageCircle, X, Send, Mic, MicOff, Sparkles } from 'lucide-react';
+import { MessageCircle, X, Send, Mic, MicOff, Sparkles, RotateCcw } from 'lucide-react';
 import { useFridge } from '@/lib/fridge-context';
 import { mockSustainability } from '@/lib/mock-data';
 import ReactMarkdown from 'react-markdown';
@@ -35,6 +35,12 @@ export default function FridgeChatbot() {
     if (open && inputRef.current) inputRef.current.focus();
   }, [open]);
 
+  const resetChat = useCallback(() => {
+    setMessages([]);
+    setInput('');
+    setIsLoading(false);
+  }, []);
+
   const getFridgeContext = useCallback(() => ({
     items: items.map(i => ({
       name: i.name, quantity: i.quantity, unit: i.unit,
@@ -58,7 +64,6 @@ export default function FridgeChatbot() {
       const err = await resp.json().catch(() => ({ error: 'Something went wrong' }));
       throw new Error(err.error || `Error ${resp.status}`);
     }
-
     if (!resp.body) throw new Error('No response body');
 
     const reader = resp.body.getReader();
@@ -81,7 +86,6 @@ export default function FridgeChatbot() {
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
-
       let nl: number;
       while ((nl = buffer.indexOf('\n')) !== -1) {
         let line = buffer.slice(0, nl);
@@ -108,35 +112,24 @@ export default function FridgeChatbot() {
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsLoading(true);
-
     try {
       await streamChat([...messages, userMsg]);
     } catch (e: any) {
-      setMessages(prev => [...prev, { role: 'assistant', content: `❌ ${e.message || 'Something went wrong. Please try again.'}` }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: `❌ ${e.message || 'Something went wrong.'}` }]);
     } finally {
       setIsLoading(false);
     }
   }, [isLoading, messages, streamChat]);
 
   const toggleVoice = useCallback(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    if (isListening) { recognitionRef.current?.stop(); setIsListening(false); return; }
+    const recognition = new SR();
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = 'en-US';
-    recognition.onresult = (e: any) => {
-      const transcript = e.results[0][0].transcript;
-      setInput(transcript);
-      setIsListening(false);
-    };
+    recognition.onresult = (e: any) => { setInput(e.results[0][0].transcript); setIsListening(false); };
     recognition.onerror = () => setIsListening(false);
     recognition.onend = () => setIsListening(false);
     recognitionRef.current = recognition;
@@ -148,21 +141,17 @@ export default function FridgeChatbot() {
 
   return (
     <>
-      {/* Floating button */}
       <button
         onClick={() => setOpen(o => !o)}
         className={cn(
           "fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all duration-300 active:scale-95",
-          open
-            ? "bg-muted text-muted-foreground rotate-90"
-            : "bg-primary text-primary-foreground hover:shadow-xl"
+          open ? "bg-muted text-muted-foreground rotate-90" : "bg-primary text-primary-foreground hover:shadow-xl"
         )}
         aria-label={open ? "Close chat" : "Open chat assistant"}
       >
         {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
       </button>
 
-      {/* Chat panel */}
       {open && (
         <div className="fixed bottom-36 right-4 z-50 flex h-[28rem] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl border bg-card shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300">
           {/* Header */}
@@ -170,10 +159,20 @@ export default function FridgeChatbot() {
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
               <Sparkles className="h-4 w-4 text-primary" />
             </div>
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-semibold">FreshKeep Assistant</p>
               <p className="text-[11px] text-muted-foreground">Ask me about your fridge 🧊</p>
             </div>
+            {messages.length > 0 && (
+              <button
+                onClick={resetChat}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95"
+                aria-label="New chat"
+                title="New chat"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+            )}
           </div>
 
           {/* Messages */}
@@ -185,38 +184,25 @@ export default function FridgeChatbot() {
                 </p>
                 <div className="flex flex-wrap gap-1.5 justify-center">
                   {SUGGESTIONS.map(s => (
-                    <button
-                      key={s}
-                      onClick={() => send(s)}
-                      className="rounded-full border bg-background px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted active:scale-95"
-                    >
+                    <button key={s} onClick={() => send(s)} className="rounded-full border bg-background px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted active:scale-95">
                       {s}
                     </button>
                   ))}
                 </div>
               </div>
             )}
-
             {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
-                  msg.role === 'user'
-                    ? "ml-auto bg-primary text-primary-foreground rounded-br-md"
-                    : "mr-auto bg-muted rounded-bl-md"
-                )}
-              >
+              <div key={i} className={cn(
+                "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+                msg.role === 'user' ? "ml-auto bg-primary text-primary-foreground rounded-br-md" : "mr-auto bg-muted rounded-bl-md"
+              )}>
                 {msg.role === 'assistant' ? (
                   <div className="prose prose-sm max-w-none dark:prose-invert [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1">
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
                   </div>
-                ) : (
-                  msg.content
-                )}
+                ) : msg.content}
               </div>
             ))}
-
             {isLoading && messages[messages.length - 1]?.role === 'user' && (
               <div className="mr-auto flex gap-1 rounded-2xl bg-muted px-4 py-3 rounded-bl-md">
                 <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -230,14 +216,10 @@ export default function FridgeChatbot() {
           <div className="border-t px-3 py-2.5">
             <div className="flex items-center gap-2">
               {hasSpeech && (
-                <button
-                  onClick={toggleVoice}
-                  className={cn(
-                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors active:scale-95",
-                    isListening ? "bg-destructive text-destructive-foreground" : "bg-muted hover:bg-muted/80"
-                  )}
-                  aria-label={isListening ? "Stop listening" : "Voice input"}
-                >
+                <button onClick={toggleVoice} className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors active:scale-95",
+                  isListening ? "bg-destructive text-destructive-foreground" : "bg-muted hover:bg-muted/80"
+                )} aria-label={isListening ? "Stop listening" : "Voice input"}>
                   {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                 </button>
               )}

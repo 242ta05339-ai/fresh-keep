@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      family_groups: {
+        Row: {
+          created_at: string
+          id: string
+          invite_code: string
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invite_code?: string
+          name?: string
+          owner_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invite_code?: string
+          name?: string
+          owner_id?: string
+        }
+        Relationships: []
+      }
+      family_members: {
+        Row: {
+          family_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          family_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          family_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_members_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       food_items: {
         Row: {
           added_by: string
@@ -23,10 +79,12 @@ export type Database = {
           cost: number | null
           created_at: string
           expiry_date: string
+          family_id: string | null
           id: string
           name: string
           quantity: number
           unit: string
+          user_id: string | null
         }
         Insert: {
           added_by?: string
@@ -36,10 +94,12 @@ export type Database = {
           cost?: number | null
           created_at?: string
           expiry_date: string
+          family_id?: string | null
           id?: string
           name: string
           quantity?: number
           unit?: string
+          user_id?: string | null
         }
         Update: {
           added_by?: string
@@ -49,10 +109,41 @@ export type Database = {
           cost?: number | null
           created_at?: string
           expiry_date?: string
+          family_id?: string | null
           id?: string
           name?: string
           quantity?: number
           unit?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "food_items_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_emoji: string
+          created_at: string
+          display_name: string
+          id: string
+        }
+        Insert: {
+          avatar_emoji?: string
+          created_at?: string
+          display_name?: string
+          id: string
+        }
+        Update: {
+          avatar_emoji?: string
+          created_at?: string
+          display_name?: string
+          id?: string
         }
         Relationships: []
       }
@@ -61,7 +152,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_family_member: {
+        Args: { _family_id: string; _user_id: string }
+        Returns: boolean
+      }
+      join_family_by_code: { Args: { _code: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

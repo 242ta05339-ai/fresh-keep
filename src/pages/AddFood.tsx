@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useFridge } from '@/lib/fridge-context';
+import { useAuth } from '@/lib/auth-context';
 import { FoodCategory, CATEGORY_EMOJI } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,8 +11,7 @@ import BarcodeScanner, { ScannedProduct } from '@/components/BarcodeScanner';
 
 const categories: FoodCategory[] = ['dairy', 'produce', 'meat', 'grains', 'beverages', 'snacks', 'condiments', 'frozen', 'other'];
 
-// Category-based default shelf-life in days
-const DEFAULT_SHELF_LIFE: Record<FoodCategory, number> = {
+const DEFAULT_SHELF_LIFE: Record<string, number> = {
   dairy: 7,
   produce: 5,
   meat: 3,
@@ -21,16 +21,44 @@ const DEFAULT_SHELF_LIFE: Record<FoodCategory, number> = {
   condiments: 90,
   frozen: 180,
   other: 7,
+  // Specific product overrides
+  milk: 7,
+  bread: 3,
+  eggs: 14,
+  yogurt: 10,
+  vegetables: 5,
+  cheese: 14,
+  chicken: 2,
+  fish: 2,
+  juice: 7,
+  butter: 30,
 };
 
-function defaultExpiry(category: FoodCategory = 'other'): string {
+function defaultExpiry(categoryOrName: string = 'other'): string {
+  const key = categoryOrName.toLowerCase();
+  const days = DEFAULT_SHELF_LIFE[key] ?? DEFAULT_SHELF_LIFE['other'];
   const d = new Date();
-  d.setDate(d.getDate() + DEFAULT_SHELF_LIFE[category]);
+  d.setDate(d.getDate() + days);
   return d.toISOString().split('T')[0];
+}
+
+function guessShelfLife(productName: string, category: FoodCategory): string {
+  const lower = productName.toLowerCase();
+  // Check specific product names first
+  for (const [key, days] of Object.entries(DEFAULT_SHELF_LIFE)) {
+    if (lower.includes(key)) {
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      return d.toISOString().split('T')[0];
+    }
+  }
+  // Fall back to category
+  return defaultExpiry(category);
 }
 
 export default function AddFood() {
   const { addItem } = useFridge();
+  const { profile } = useAuth();
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [unit, setUnit] = useState('pieces');
@@ -48,15 +76,19 @@ export default function AddFood() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !expiryDate) return;
+    if (!name) return;
+
+    // If no expiry date, apply smart default
+    const finalExpiry = expiryDate || guessShelfLife(name, category);
+
     try {
       await addItem({
         name,
         quantity: Number(quantity),
         unit,
-        expiryDate,
+        expiryDate: finalExpiry,
         category,
-        addedBy: 'You',
+        addedBy: profile?.display_name || 'You',
         cost: cost ? Number(cost) : undefined,
       });
       setAdded(true);
@@ -72,18 +104,16 @@ export default function AddFood() {
     const cat = (product.category as FoodCategory) || 'other';
 
     if (product.found && product.name) {
-      // Pre-fill form so the user can confirm or adjust the expiry date
       setName(product.name);
       setCategory(cat);
-      setExpiryDate(defaultExpiry(cat));
+      setExpiryDate(guessShelfLife(product.name, cat));
       setManualPrompt(`Found "${product.name}". Please confirm or adjust the expiry date, then tap Add to Fridge.`);
       toast.success(`Found: ${product.name} — please confirm expiry date`);
     } else {
-      // Product not found — prompt full manual entry with a sensible default expiry
       setName('');
       setCategory('other');
-      setExpiryDate(defaultExpiry('other'));
-      setManualPrompt(`Barcode ${product.barcode} not found in our database. Please fill in the details below.`);
+      setExpiryDate('');
+      setManualPrompt(`Barcode ${product.barcode} not found. Please fill in the details below. If you skip the expiry date, a smart default will be applied.`);
       toast.info('Please add the product details manually.');
     }
   };
@@ -102,7 +132,6 @@ export default function AddFood() {
         />
       )}
 
-      {/* Barcode scanner button */}
       <button
         onClick={() => setShowScanner(true)}
         className="fade-in-up-delay-1 flex w-full items-center gap-3 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-4 transition-colors hover:border-primary/50 active:scale-[0.98]"
@@ -114,7 +143,6 @@ export default function AddFood() {
         </div>
       </button>
 
-      {/* Manual entry prompt after failed scan */}
       {manualPrompt && (
         <div className="fade-in-up rounded-xl border border-warning/30 bg-warning/5 p-4 text-sm text-warning-foreground">
           {manualPrompt}
@@ -142,7 +170,8 @@ export default function AddFood() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="expiry">Expiry Date</Label>
-              <Input id="expiry" type="date" value={expiryDate} onChange={e => setExpiryDate(e.target.value)} required />
+              <Input id="expiry" type="date" value={expiryDate} onChange={e => setExpiryDate(e.target.value)} />
+              <p className="text-[10px] text-muted-foreground">Leave blank for smart default</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="cost">Cost ($)</Label>
