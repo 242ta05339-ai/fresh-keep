@@ -1,39 +1,92 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { FoodItem, Notification } from './types';
-import { mockFoodItems, mockNotifications } from './mock-data';
+import { mockNotifications } from './mock-data';
+import { supabase } from '@/integrations/supabase/client';
 
 interface FridgeContextType {
   items: FoodItem[];
   notifications: Notification[];
-  addItem: (item: Omit<FoodItem, 'id' | 'addedDate' | 'consumed'>) => void;
+  addItem: (item: Omit<FoodItem, 'id' | 'addedDate' | 'consumed'>) => Promise<void>;
   removeItem: (id: string) => void;
   markConsumed: (id: string, percentage: number) => void;
   markNotificationRead: (id: string) => void;
   unreadCount: number;
+  loading: boolean;
 }
 
 const FridgeContext = createContext<FridgeContextType | null>(null);
 
+function mapRowToItem(row: any): FoodItem {
+  return {
+    id: row.id,
+    name: row.name,
+    quantity: row.quantity,
+    unit: row.unit,
+    expiryDate: row.expiry_date,
+    category: row.category,
+    addedDate: row.added_date,
+    addedBy: row.added_by,
+    consumed: row.consumed,
+    cost: row.cost ? Number(row.cost) : undefined,
+  };
+}
+
 export function FridgeProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<FoodItem[]>(mockFoodItems);
+  const [items, setItems] = useState<FoodItem[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const [loading, setLoading] = useState(true);
 
-  const addItem = useCallback((item: Omit<FoodItem, 'id' | 'addedDate' | 'consumed'>) => {
-    const newItem: FoodItem = {
-      ...item,
-      id: crypto.randomUUID(),
-      addedDate: new Date().toISOString().split('T')[0],
-      consumed: 0,
-    };
-    setItems(prev => [newItem, ...prev]);
+  // Fetch items from database
+  const fetchItems = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('food_items')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setItems(data.map(mapRowToItem));
+    }
+    setLoading(false);
   }, []);
 
-  const removeItem = useCallback((id: string) => {
-    setItems(prev => prev.filter(i => i.id !== id));
+  useEffect(() => {
+    fetchItems();
+
+    // Realtime subscription
+    const channel = supabase
+      .channel('food_items_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'food_items' }, () => {
+        fetchItems();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchItems]);
+
+  const addItem = useCallback(async (item: Omit<FoodItem, 'id' | 'addedDate' | 'consumed'>) => {
+    const { error } = await supabase.from('food_items').insert({
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      expiry_date: item.expiryDate,
+      category: item.category,
+      added_by: item.addedBy,
+      cost: item.cost ?? null,
+    });
+
+    if (error) {
+      console.error('Failed to add item:', error);
+      throw error;
+    }
+    // Realtime will handle the refresh
   }, []);
 
-  const markConsumed = useCallback((id: string, percentage: number) => {
-    setItems(prev => prev.map(i => i.id === id ? { ...i, consumed: Math.min(100, percentage) } : i));
+  const removeItem = useCallback(async (id: string) => {
+    await supabase.from('food_items').delete().eq('id', id);
+  }, []);
+
+  const markConsumed = useCallback(async (id: string, percentage: number) => {
+    await supabase.from('food_items').update({ consumed: Math.min(100, percentage) }).eq('id', id);
   }, []);
 
   const markNotificationRead = useCallback((id: string) => {
@@ -43,7 +96,7 @@ export function FridgeProvider({ children }: { children: ReactNode }) {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <FridgeContext.Provider value={{ items, notifications, addItem, removeItem, markConsumed, markNotificationRead, unreadCount }}>
+    <FridgeContext.Provider value={{ items, notifications, addItem, removeItem, markConsumed, markNotificationRead, unreadCount, loading }}>
       {children}
     </FridgeContext.Provider>
   );
