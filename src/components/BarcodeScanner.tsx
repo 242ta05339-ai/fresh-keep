@@ -34,6 +34,7 @@ export default function BarcodeScanner({ onProductFound, onClose }: BarcodeScann
   const [status, setStatus] = useState<'starting' | 'scanning' | 'looking-up' | 'error'>('starting');
   const [errorMsg, setErrorMsg] = useState('');
   const processingRef = useRef(false);
+  const isRunningRef = useRef(false);
 
   const lookupBarcode = useCallback(async (code: string) => {
     if (processingRef.current) return;
@@ -79,6 +80,7 @@ export default function BarcodeScanner({ onProductFound, onClose }: BarcodeScann
           () => {}
         );
         setStatus('scanning');
+        isRunningRef.current = true;
       } catch (err: any) {
         const msg = err?.message || String(err);
         if (/permission/i.test(msg)) {
@@ -95,7 +97,8 @@ export default function BarcodeScanner({ onProductFound, onClose }: BarcodeScann
     start();
 
     return () => {
-      if (scanner) {
+      if (scanner && isRunningRef.current) {
+        isRunningRef.current = false;
         scanner.stop().then(() => scanner!.clear()).catch(() => {});
       }
     };
