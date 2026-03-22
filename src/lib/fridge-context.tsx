@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, Rea
 import { FoodItem, Notification } from './types';
 import { mockNotifications } from './mock-data';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './auth-context';
 
 interface FridgeContextType {
   items: FoodItem[];
@@ -35,8 +36,8 @@ export function FridgeProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<FoodItem[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
-  // Fetch items from database
   const fetchItems = useCallback(async () => {
     const { data, error } = await supabase
       .from('food_items')
@@ -52,7 +53,6 @@ export function FridgeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchItems();
 
-    // Realtime subscription
     const channel = supabase
       .channel('food_items_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'food_items' }, () => {
@@ -64,6 +64,18 @@ export function FridgeProvider({ children }: { children: ReactNode }) {
   }, [fetchItems]);
 
   const addItem = useCallback(async (item: Omit<FoodItem, 'id' | 'addedDate' | 'consumed'>) => {
+    // Try to get user's family_id
+    let familyId: string | null = null;
+    if (user) {
+      const { data } = await supabase
+        .from('family_members')
+        .select('family_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .single();
+      if (data) familyId = data.family_id;
+    }
+
     const { error } = await supabase.from('food_items').insert({
       name: item.name,
       quantity: item.quantity,
@@ -72,14 +84,15 @@ export function FridgeProvider({ children }: { children: ReactNode }) {
       category: item.category,
       added_by: item.addedBy,
       cost: item.cost ?? null,
+      user_id: user?.id ?? null,
+      family_id: familyId,
     });
 
     if (error) {
       console.error('Failed to add item:', error);
       throw error;
     }
-    // Realtime will handle the refresh
-  }, []);
+  }, [user]);
 
   const removeItem = useCallback(async (id: string) => {
     await supabase.from('food_items').delete().eq('id', id);
