@@ -34,6 +34,7 @@ export default function BarcodeScanner({ onProductFound, onClose }: BarcodeScann
   const [status, setStatus] = useState<'starting' | 'scanning' | 'looking-up' | 'error'>('starting');
   const [errorMsg, setErrorMsg] = useState('');
   const processingRef = useRef(false);
+  const isRunningRef = useRef(false);
 
   const lookupBarcode = useCallback(async (code: string) => {
     if (processingRef.current) return;
