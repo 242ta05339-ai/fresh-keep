@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScanBarcode, Plus, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import BarcodeScanner from '@/components/BarcodeScanner';
 
 const categories: FoodCategory[] = ['dairy', 'produce', 'meat', 'grains', 'beverages', 'snacks', 'condiments', 'frozen', 'other'];
 
@@ -18,6 +19,7 @@ export default function AddFood() {
   const [category, setCategory] = useState<FoodCategory>('other');
   const [cost, setCost] = useState('');
   const [added, setAdded] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
