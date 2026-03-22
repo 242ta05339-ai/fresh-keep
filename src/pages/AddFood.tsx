@@ -48,12 +48,26 @@ export default function AddFood() {
         <p className="text-muted-foreground">Track what goes into your fridge.</p>
       </div>
 
-      {/* Barcode scanner placeholder */}
-      <button className="fade-in-up-delay-1 flex w-full items-center gap-3 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-4 transition-colors hover:border-primary/50 active:scale-[0.98]">
+      {showScanner && (
+        <BarcodeScanner
+          onProductFound={(product) => {
+            setName(product.name);
+            if (product.category) setCategory(product.category as FoodCategory);
+            setShowScanner(false);
+          }}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
+
+      {/* Barcode scanner button */}
+      <button
+        onClick={() => setShowScanner(true)}
+        className="fade-in-up-delay-1 flex w-full items-center gap-3 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-4 transition-colors hover:border-primary/50 active:scale-[0.98]"
+      >
         <ScanBarcode className="h-6 w-6 text-primary" />
         <div className="text-left">
           <p className="font-medium text-primary">Scan Barcode</p>
-          <p className="text-xs text-muted-foreground">Auto-fetch product details (coming soon)</p>
+          <p className="text-xs text-muted-foreground">Use your camera to auto-fetch product details</p>
         </div>
       </button>
 
