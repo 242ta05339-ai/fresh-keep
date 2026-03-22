@@ -96,8 +96,7 @@ export default function BarcodeScanner({ onProductFound, onClose }: BarcodeScann
 
     return () => {
       if (scanner) {
-        scanner.stop().catch(() => {});
-        scanner.clear();
+        scanner.stop().then(() => scanner!.clear()).catch(() => {});
       }
     };
   }, [lookupBarcode]);
