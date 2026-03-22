@@ -81,6 +81,7 @@ export default function BarcodeScanner({ onProductFound, onClose }: BarcodeScann
         );
         setStatus('scanning');
         isRunningRef.current = true;
+      } catch (err: any) {
         const msg = err?.message || String(err);
         if (/permission/i.test(msg)) {
           setErrorMsg('Camera permission denied. Please allow camera access and try again.');
@@ -96,7 +97,8 @@ export default function BarcodeScanner({ onProductFound, onClose }: BarcodeScann
     start();
 
     return () => {
-      if (scanner) {
+      if (scanner && isRunningRef.current) {
+        isRunningRef.current = false;
         scanner.stop().then(() => scanner!.clear()).catch(() => {});
       }
     };
