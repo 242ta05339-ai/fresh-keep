@@ -6,9 +6,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScanBarcode, Plus, Check } from 'lucide-react';
 import { toast } from 'sonner';
-import BarcodeScanner from '@/components/BarcodeScanner';
+import BarcodeScanner, { ScannedProduct } from '@/components/BarcodeScanner';
 
 const categories: FoodCategory[] = ['dairy', 'produce', 'meat', 'grains', 'beverages', 'snacks', 'condiments', 'frozen', 'other'];
+
+function defaultExpiry(daysFromNow = 7): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysFromNow);
+  return d.toISOString().split('T')[0];
+}
 
 export default function AddFood() {
   const { addItem } = useFridge();
@@ -20,25 +26,65 @@ export default function AddFood() {
   const [cost, setCost] = useState('');
   const [added, setAdded] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [manualPrompt, setManualPrompt] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const resetForm = () => {
+    setName(''); setQuantity('1'); setUnit('pieces'); setExpiryDate(''); setCategory('other'); setCost('');
+    setAdded(false); setManualPrompt('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !expiryDate) return;
-    addItem({
-      name,
-      quantity: Number(quantity),
-      unit,
-      expiryDate,
-      category,
-      addedBy: 'You',
-      cost: cost ? Number(cost) : undefined,
-    });
-    setAdded(true);
-    toast.success(`${name} added to your fridge!`);
-    setTimeout(() => {
-      setName(''); setQuantity('1'); setUnit('pieces'); setExpiryDate(''); setCategory('other'); setCost('');
-      setAdded(false);
-    }, 1500);
+    try {
+      await addItem({
+        name,
+        quantity: Number(quantity),
+        unit,
+        expiryDate,
+        category,
+        addedBy: 'You',
+        cost: cost ? Number(cost) : undefined,
+      });
+      setAdded(true);
+      toast.success(`${name} added to your fridge!`);
+      setTimeout(resetForm, 1500);
+    } catch {
+      toast.error('Failed to add item. Please try again.');
+    }
+  };
+
+  const handleProductScanned = async (product: ScannedProduct) => {
+    setShowScanner(false);
+
+    if (product.found && product.name) {
+      // Auto-add the scanned product with a default 7-day expiry
+      try {
+        await addItem({
+          name: product.name,
+          quantity: 1,
+          unit: 'pieces',
+          expiryDate: defaultExpiry(7),
+          category: (product.category as FoodCategory) || 'other',
+          addedBy: 'You',
+        });
+        setAdded(true);
+        toast.success(`${product.name} added to your fridge!`);
+        setTimeout(resetForm, 1500);
+      } catch {
+        toast.error('Failed to save item. Please try again.');
+        // Pre-fill form as fallback
+        setName(product.name);
+        if (product.category) setCategory(product.category as FoodCategory);
+        setExpiryDate(defaultExpiry(7));
+      }
+    } else {
+      // Product not found — pre-fill what we can and prompt manual entry
+      setManualPrompt(`Barcode ${product.barcode} not found in our database. Please fill in the details below.`);
+      setName('');
+      setExpiryDate(defaultExpiry(7));
+      toast.info('Please add the product details manually.');
+    }
   };
 
   return (
@@ -50,11 +96,7 @@ export default function AddFood() {
 
       {showScanner && (
         <BarcodeScanner
-          onProductFound={(product) => {
-            setName(product.name);
-            if (product.category) setCategory(product.category as FoodCategory);
-            setShowScanner(false);
-          }}
+          onProductFound={handleProductScanned}
           onClose={() => setShowScanner(false)}
         />
       )}
@@ -70,6 +112,13 @@ export default function AddFood() {
           <p className="text-xs text-muted-foreground">Use your camera to auto-fetch product details</p>
         </div>
       </button>
+
+      {/* Manual entry prompt after failed scan */}
+      {manualPrompt && (
+        <div className="fade-in-up rounded-xl border border-warning/30 bg-warning/5 p-4 text-sm text-warning-foreground">
+          {manualPrompt}
+        </div>
+      )}
 
       <div className="fade-in-up-delay-2 rounded-xl border bg-card p-5 shadow-sm">
         <form onSubmit={handleSubmit} className="space-y-4">

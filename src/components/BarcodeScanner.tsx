@@ -4,8 +4,15 @@ import { X, Loader2, Camera, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
+export interface ScannedProduct {
+  name: string;
+  category?: string;
+  found: boolean;
+  barcode: string;
+}
+
 interface BarcodeScannerProps {
-  onProductFound: (product: { name: string; category?: string }) => void;
+  onProductFound: (product: ScannedProduct) => void;
   onClose: () => void;
 }
 
@@ -48,17 +55,15 @@ export default function BarcodeScanner({ onProductFound, onClose }: BarcodeScann
       if (data.status === 1 && data.product) {
         const p = data.product as OpenFoodFactsProduct;
         const name = p.product_name || `Product ${code}`;
-        onProductFound({ name, category: mapCategory(p.categories_tags) });
+        onProductFound({ name, category: mapCategory(p.categories_tags), found: true, barcode: code });
         toast.success(`Found: ${name}`);
       } else {
-        toast.error('Product not found in database');
-        setStatus('scanning');
-        processingRef.current = false;
+        toast.info('Product not found — please add details manually');
+        onProductFound({ name: '', category: undefined, found: false, barcode: code });
       }
     } catch {
-      toast.error('Failed to look up product');
-      setStatus('scanning');
-      processingRef.current = false;
+      toast.error('Failed to look up product — please add details manually');
+      onProductFound({ name: '', category: undefined, found: false, barcode: code });
     }
   }, [onProductFound]);
 
@@ -106,7 +111,6 @@ export default function BarcodeScanner({ onProductFound, onClose }: BarcodeScann
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background/95 backdrop-blur-sm">
-      {/* Header */}
       <div className="flex items-center justify-between border-b bg-card px-4 py-3">
         <h3 className="font-display text-lg font-semibold">Scan Barcode</h3>
         <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
@@ -114,7 +118,6 @@ export default function BarcodeScanner({ onProductFound, onClose }: BarcodeScann
         </Button>
       </div>
 
-      {/* Scanner area */}
       <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6">
         {status === 'error' ? (
           <div className="flex flex-col items-center gap-4 text-center">
