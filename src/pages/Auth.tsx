@@ -20,7 +20,7 @@ export default function Auth() {
     try {
       if (isSignUp) {
         await signUp(email, password, displayName || email.split('@')[0]);
-        toast.success('Account created! You are now signed in.');
+        toast.success('Account created! You can now sign in.');
       } else {
         await signIn(email, password);
         toast.success('Welcome back!');
