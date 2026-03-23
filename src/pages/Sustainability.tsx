@@ -1,14 +1,79 @@
-import { mockSustainability } from '@/lib/mock-data';
-import { Leaf, Flame, TrendingUp, Award } from 'lucide-react';
+import { useMemo } from 'react';
+import { useFridge } from '@/lib/fridge-context';
+import { Leaf, Flame, TrendingUp } from 'lucide-react';
+import { SustainabilityTier } from '@/lib/types';
 
-const tierConfig = {
-  bronze: { emoji: '🥉', next: 'Silver', threshold: 50, color: 'text-bronze' },
-  silver: { emoji: '🥈', next: 'Gold', threshold: 80, color: 'text-silver' },
-  gold: { emoji: '🥇', next: null, threshold: 100, color: 'text-gold' },
+const tierConfig: Record<SustainabilityTier, { emoji: string; next: string | null; threshold: number }> = {
+  bronze: { emoji: '🥉', next: 'Silver', threshold: 50 },
+  silver: { emoji: '🥈', next: 'Gold', threshold: 80 },
+  gold: { emoji: '🥇', next: null, threshold: 100 },
 };
 
 export default function Sustainability() {
-  const data = mockSustainability;
+  const { items } = useFridge();
+
+  const data = useMemo(() => {
+    if (!items.length) return null;
+
+    const today = new Date().toISOString().split('T')[0];
+    const totalConsumed = items.reduce((sum, i) => sum + i.consumed, 0);
+    const avgConsumed = totalConsumed / items.length;
+    const wastePercentage = Math.round(100 - avgConsumed);
+    const score = Math.round(avgConsumed);
+    const tier: SustainabilityTier = score >= 80 ? 'gold' : score >= 50 ? 'silver' : 'bronze';
+    const itemsSaved = items.filter(i => i.consumed >= 80).length;
+
+    // Streak: count items added on consecutive days
+    const uniqueDates = [...new Set(items.map(i => i.addedDate))].sort().reverse();
+    let streakDays = 0;
+    const todayDate = new Date();
+    for (let d = 0; d < uniqueDates.length; d++) {
+      const expected = new Date(todayDate);
+      expected.setDate(expected.getDate() - d);
+      if (uniqueDates[d] === expected.toISOString().split('T')[0]) {
+        streakDays++;
+      } else break;
+    }
+
+    return { score, tier, wastePercentage, itemsSaved, streakDays: Math.max(streakDays, 1) };
+  }, [items]);
+
+  const tips = useMemo(() => {
+    if (!items.length) return [];
+    const today = new Date();
+    const expiringSoon = items.filter(i => {
+      const exp = new Date(i.expiryDate);
+      const diff = (exp.getTime() - today.getTime()) / 86400000;
+      return diff <= 3 && diff >= 0;
+    });
+
+    const tips: { icon: string; tip: string }[] = [];
+    expiringSoon.forEach(i => {
+      tips.push({ icon: '⚡', tip: `Use ${i.name} soon — expires ${i.expiryDate}` });
+    });
+    if (tips.length === 0) {
+      tips.push({ icon: '✅', tip: 'Nothing expiring in the next 3 days — great job!' });
+    }
+    tips.push({ icon: '📋', tip: 'Plan meals around expiring items first' });
+    return tips.slice(0, 4);
+  }, [items]);
+
+  if (!items.length) {
+    return (
+      <div className="space-y-6 max-w-lg mx-auto">
+        <div className="fade-in-up">
+          <h2 className="font-display text-2xl font-semibold">Sustainability Score</h2>
+          <p className="text-muted-foreground">Your eco-friendly consumption journey.</p>
+        </div>
+        <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground">
+          <p className="text-lg">🌱</p>
+          <p className="mt-2">Add items to your fridge to track your sustainability.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) return null;
   const tier = tierConfig[data.tier];
 
   return (
@@ -67,11 +132,7 @@ export default function Sustainability() {
       {/* Tips */}
       <div className="fade-in-up-delay-3 space-y-3">
         <h3 className="font-display text-lg font-semibold">Tips to Level Up</h3>
-        {[
-          { icon: '🥗', tip: 'Use spinach in a smoothie before it wilts' },
-          { icon: '🍞', tip: "Freeze bread if you won't finish it in 2 days" },
-          { icon: '📋', tip: 'Plan meals around expiring items first' },
-        ].map(({ icon, tip }) => (
+        {tips.map(({ icon, tip }) => (
           <div key={tip} className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-sm">
             <span className="text-lg">{icon}</span>
             <p className="text-sm">{tip}</p>
