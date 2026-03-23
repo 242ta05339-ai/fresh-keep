@@ -1,16 +1,88 @@
-import { mockRecipes } from '@/lib/mock-data';
+import { useMemo } from 'react';
+import { useFridge } from '@/lib/fridge-context';
 import { Clock, Users, ChefHat } from 'lucide-react';
 
+interface GeneratedRecipe {
+  id: string;
+  title: string;
+  readyInMinutes: number;
+  servings: number;
+  usedIngredients: string[];
+  missedIngredients: string[];
+}
+
+const RECIPE_TEMPLATES: { title: string; minutes: number; servings: number; keywords: string[]; missing: string[] }[] = [
+  { title: 'Quick Stir-Fry', minutes: 20, servings: 3, keywords: ['chicken', 'meat', 'vegetable', 'spinach', 'pepper'], missing: ['Soy Sauce', 'Garlic'] },
+  { title: 'Smoothie Bowl', minutes: 5, servings: 1, keywords: ['milk', 'yogurt', 'berry', 'fruit', 'banana'], missing: ['Granola', 'Honey'] },
+  { title: 'Toast & Eggs', minutes: 10, servings: 2, keywords: ['bread', 'egg', 'avocado', 'cheese'], missing: [] },
+  { title: 'Fresh Salad', minutes: 10, servings: 2, keywords: ['spinach', 'lettuce', 'tomato', 'cucumber', 'produce'], missing: ['Dressing', 'Croutons'] },
+  { title: 'Cheesy Omelette', minutes: 15, servings: 2, keywords: ['egg', 'cheese', 'pepper', 'mushroom'], missing: ['Herbs'] },
+  { title: 'Pasta with Veggies', minutes: 25, servings: 4, keywords: ['tomato', 'pepper', 'spinach', 'cheese'], missing: ['Pasta', 'Olive Oil'] },
+  { title: 'Fruit Yogurt Parfait', minutes: 5, servings: 1, keywords: ['yogurt', 'berry', 'fruit'], missing: ['Granola'] },
+  { title: 'Grilled Sandwich', minutes: 15, servings: 2, keywords: ['bread', 'cheese', 'meat', 'chicken'], missing: ['Butter'] },
+];
+
 export default function Recipes() {
+  const { items } = useFridge();
+
+  const recipes = useMemo<GeneratedRecipe[]>(() => {
+    if (!items.length) return [];
+
+    const itemNames = items.map(i => i.name.toLowerCase());
+    const expiringFirst = [...items].sort((a, b) => a.expiryDate.localeCompare(b.expiryDate));
+
+    const matched: GeneratedRecipe[] = [];
+
+    for (const template of RECIPE_TEMPLATES) {
+      const used = expiringFirst.filter(item =>
+        template.keywords.some(kw =>
+          item.name.toLowerCase().includes(kw) || item.category.toLowerCase().includes(kw)
+        )
+      );
+      if (used.length > 0) {
+        matched.push({
+          id: template.title,
+          title: template.title,
+          readyInMinutes: template.minutes,
+          servings: template.servings,
+          usedIngredients: used.map(i => i.name),
+          missedIngredients: template.missing,
+        });
+      }
+    }
+
+    return matched.slice(0, 6);
+  }, [items]);
+
+  if (!items.length) {
+    return (
+      <div className="space-y-6">
+        <div className="fade-in-up">
+          <h2 className="font-display text-2xl font-semibold">Recipe Suggestions</h2>
+          <p className="text-muted-foreground">Use up items before they expire.</p>
+        </div>
+        <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground">
+          <p className="text-lg">🍳</p>
+          <p className="mt-2">Add items to your fridge to get recipe ideas.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="fade-in-up">
         <h2 className="font-display text-2xl font-semibold">Recipe Suggestions</h2>
-        <p className="text-muted-foreground">Use up items before they expire.</p>
+        <p className="text-muted-foreground">Based on what's in your fridge — prioritizing items expiring soon.</p>
       </div>
 
       <div className="space-y-4">
-        {mockRecipes.map((recipe, i) => (
+        {recipes.length === 0 && (
+          <div className="rounded-xl border bg-card p-6 text-center text-muted-foreground">
+            <p>No recipe matches found for your current items. Try adding more variety!</p>
+          </div>
+        )}
+        {recipes.map((recipe, i) => (
           <div
             key={recipe.id}
             className="stagger-child rounded-xl border bg-card p-4 shadow-sm space-y-3"
