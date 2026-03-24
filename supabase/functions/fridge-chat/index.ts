@@ -44,7 +44,7 @@ CURRENT FRIDGE INVENTORY:
 ${fridgeContext.items
   .map(
     (i: any) =>
-      `- ${i.name}: ${i.quantity} ${i.unit}, expires ${i.expiryDate}, category: ${i.category}, ${i.consumed}% consumed, added by ${i.addedBy}${i.cost ? `, cost $${i.cost}` : ""}`
+      `- ${i.name}: ${i.quantity} ${i.unit}, expires ${i.expiryDate}, category: ${i.category}, ${i.consumed}% consumed, added by ${i.addedBy}${i.cost ? `, cost ₹${i.cost}` : ""}`
   )
   .join("\n")}
 
