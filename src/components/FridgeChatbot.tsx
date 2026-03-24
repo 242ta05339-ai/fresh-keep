@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { MessageCircle, X, Send, Mic, MicOff, Sparkles, RotateCcw } from 'lucide-react';
 import { useFridge } from '@/lib/fridge-context';
-import { mockSustainability } from '@/lib/mock-data';
+import { computeSustainability } from '@/lib/sustainability';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 
