@@ -126,8 +126,11 @@ export default function Family() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>Invite code:</span>
               <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{family.invite_code}</code>
-              <button onClick={copyInviteCode} className="text-primary hover:text-primary/80 active:scale-95">
+              <button onClick={copyInviteCode} className="text-primary hover:text-primary/80 active:scale-95" title="Copy code">
                 <Copy className="h-3.5 w-3.5" />
+              </button>
+              <button onClick={copyInviteLink} className="text-primary hover:text-primary/80 active:scale-95" title="Copy invite link">
+                <Link className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>

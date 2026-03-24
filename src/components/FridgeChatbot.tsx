@@ -47,7 +47,7 @@ export default function FridgeChatbot() {
       expiryDate: i.expiryDate, category: i.category,
       consumed: i.consumed, addedBy: i.addedBy, cost: i.cost,
     })),
-    sustainability: mockSustainability,
+    sustainability: computeSustainability(items),
   }), [items]);
 
   const streamChat = useCallback(async (allMessages: Message[]) => {

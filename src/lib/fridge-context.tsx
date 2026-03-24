@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from 'react';
 import { FoodItem, Notification } from './types';
-import { mockNotifications } from './mock-data';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './auth-context';
 
@@ -32,13 +31,76 @@ function mapRowToItem(row: any): FoodItem {
   };
 }
 
+function generateNotifications(items: FoodItem[]): Notification[] {
+  const now = Date.now();
+  const notifications: Notification[] = [];
+
+  for (const item of items) {
+    const daysLeft = Math.ceil((new Date(item.expiryDate).getTime() - now) / (1000 * 60 * 60 * 24));
+
+    if (daysLeft <= 0) {
+      notifications.push({
+        id: `exp-${item.id}`,
+        title: `${item.name} has expired! ⚠️`,
+        message: 'Remove it or check if it\'s still usable.',
+        type: 'urgent',
+        timestamp: new Date().toISOString(),
+        read: false,
+        foodItemId: item.id,
+      });
+    } else if (daysLeft === 1) {
+      notifications.push({
+        id: `exp-${item.id}`,
+        title: `${item.name} expires tomorrow!`,
+        message: 'Use it today or freeze it to avoid waste.',
+        type: 'urgent',
+        timestamp: new Date().toISOString(),
+        read: false,
+        foodItemId: item.id,
+      });
+    } else if (daysLeft <= 3) {
+      notifications.push({
+        id: `exp-${item.id}`,
+        title: `${item.name} — ${daysLeft} days left`,
+        message: 'Plan a meal to use it before it expires.',
+        type: 'warning',
+        timestamp: new Date().toISOString(),
+        read: false,
+        foodItemId: item.id,
+      });
+    }
+
+    if (item.consumed >= 80) {
+      notifications.push({
+        id: `save-${item.id}`,
+        title: `Great job on ${item.name}! 🎉`,
+        message: `${item.consumed}% consumed — minimal waste!`,
+        type: 'info',
+        timestamp: new Date().toISOString(),
+        read: true,
+        foodItemId: item.id,
+      });
+    }
+  }
+
+  return notifications.sort((a, b) => {
+    const priority = { urgent: 0, warning: 1, info: 2 };
+    return priority[a.type] - priority[b.type];
+  });
+}
+
 export function FridgeProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<FoodItem[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   const fetchItems = useCallback(async () => {
+    if (!user) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
     const { data, error } = await supabase
       .from('food_items')
       .select('*')
@@ -48,7 +110,7 @@ export function FridgeProvider({ children }: { children: ReactNode }) {
       setItems(data.map(mapRowToItem));
     }
     setLoading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     fetchItems();
@@ -63,8 +125,32 @@ export function FridgeProvider({ children }: { children: ReactNode }) {
     return () => { supabase.removeChannel(channel); };
   }, [fetchItems]);
 
+  // Browser push notifications for urgent items
+  useEffect(() => {
+    if (!('Notification' in window) || items.length === 0) return;
+    if (Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+    if (Notification.permission !== 'granted') return;
+
+    const now = Date.now();
+    for (const item of items) {
+      const daysLeft = Math.ceil((new Date(item.expiryDate).getTime() - now) / (1000 * 60 * 60 * 24));
+      if (daysLeft <= 1 && daysLeft >= 0) {
+        new Notification(`🚨 ${item.name} ${daysLeft === 0 ? 'expires today!' : 'expires tomorrow!'}`, {
+          body: 'Open FreshKeep to use it before it goes to waste.',
+          icon: '/placeholder.svg',
+        });
+      }
+    }
+  }, [items]);
+
+  const notifications = useMemo(() => {
+    const generated = generateNotifications(items);
+    return generated.map(n => ({ ...n, read: readIds.has(n.id) ? true : n.read }));
+  }, [items, readIds]);
+
   const addItem = useCallback(async (item: Omit<FoodItem, 'id' | 'addedDate' | 'consumed'>) => {
-    // Try to get user's family_id
     let familyId: string | null = null;
     if (user) {
       const { data } = await supabase
@@ -103,7 +189,7 @@ export function FridgeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const markNotificationRead = useCallback((id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setReadIds(prev => new Set(prev).add(id));
   }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
