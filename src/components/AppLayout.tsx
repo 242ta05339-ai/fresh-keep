@@ -16,6 +16,7 @@ const linkDefs = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { unreadCount } = useFridge();
+  const { t } = useI18n();
   const location = useLocation();
 
   return (
@@ -27,17 +28,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="text-2xl">🧊</span>
             <h1 className="font-display text-xl font-semibold tracking-tight">FreshKeep</h1>
           </div>
-          <NavLink
-            to="/notifications"
-            className="relative rounded-xl p-2.5 transition-colors hover:bg-muted active:scale-95"
-          >
-            <Bell className="h-5 w-5 text-muted-foreground" />
-            {unreadCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[11px] font-semibold text-destructive-foreground">
-                {unreadCount}
-              </span>
-            )}
-          </NavLink>
+          <div className="flex items-center gap-2">
+            <LanguageSelector />
+            <NavLink
+              to="/notifications"
+              className="relative rounded-xl p-2.5 transition-colors hover:bg-muted active:scale-95"
+            >
+              <Bell className="h-5 w-5 text-muted-foreground" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[11px] font-semibold text-destructive-foreground">
+                  {unreadCount}
+                </span>
+              )}
+            </NavLink>
+          </div>
         </div>
       </header>
 
