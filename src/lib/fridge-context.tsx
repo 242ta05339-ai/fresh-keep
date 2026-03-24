@@ -5,7 +5,7 @@ import { useAuth } from './auth-context';
 
 interface FridgeContextType {
   items: FoodItem[];
-  notifications: Notification[];
+  notifications: AppNotification[];
   addItem: (item: Omit<FoodItem, 'id' | 'addedDate' | 'consumed'>) => Promise<void>;
   removeItem: (id: string) => void;
   markConsumed: (id: string, percentage: number) => void;
