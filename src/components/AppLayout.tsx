@@ -5,13 +5,13 @@ import { useI18n } from '@/lib/i18n-context';
 import FridgeChatbot from '@/components/FridgeChatbot';
 import LanguageSelector from '@/components/LanguageSelector';
 
-const links = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/add', icon: PlusCircle, label: 'Add Food' },
-  { to: '/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/recipes', icon: ChefHat, label: 'Recipes' },
-  { to: '/sustainability', icon: Leaf, label: 'Eco Score' },
-  { to: '/family', icon: Users, label: 'Family' },
+const linkDefs = [
+  { to: '/', icon: LayoutDashboard, labelKey: 'dashboard' as const },
+  { to: '/add', icon: PlusCircle, labelKey: 'addFood' as const },
+  { to: '/analytics', icon: BarChart3, labelKey: 'analytics' as const },
+  { to: '/recipes', icon: ChefHat, labelKey: 'recipes' as const },
+  { to: '/sustainability', icon: Leaf, labelKey: 'ecoScore' as const },
+  { to: '/family', icon: Users, labelKey: 'family' as const },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
