@@ -63,6 +63,7 @@ export default function Dashboard() {
               key={item.id}
               item={item}
               onRemove={removeItem}
+              onConsume={markConsumed}
               style={{ animationDelay: `${i * 0.06}s` }}
             />
           ))}

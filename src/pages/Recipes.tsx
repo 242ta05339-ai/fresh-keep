@@ -28,8 +28,13 @@ export default function Recipes() {
   const recipes = useMemo<GeneratedRecipe[]>(() => {
     if (!items.length) return [];
 
-    const itemNames = items.map(i => i.name.toLowerCase());
-    const expiringFirst = [...items].sort((a, b) => a.expiryDate.localeCompare(b.expiryDate));
+    // Filter out expired items
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const validItems = items.filter(i => new Date(i.expiryDate) >= now);
+    if (!validItems.length) return [];
+
+    const expiringFirst = [...validItems].sort((a, b) => a.expiryDate.localeCompare(b.expiryDate));
 
     const matched: GeneratedRecipe[] = [];
 
