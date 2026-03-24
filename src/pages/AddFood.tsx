@@ -174,7 +174,7 @@ export default function AddFood() {
               <p className="text-[10px] text-muted-foreground">Leave blank for smart default</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cost">Cost ($)</Label>
+              <Label htmlFor="cost">Cost (₹)</Label>
               <Input id="cost" type="number" step="0.01" placeholder="0.00" value={cost} onChange={e => setCost(e.target.value)} />
             </div>
           </div>
