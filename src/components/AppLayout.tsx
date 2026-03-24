@@ -1,19 +1,22 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, PlusCircle, BarChart3, ChefHat, Bell, Leaf, Users } from 'lucide-react';
 import { useFridge } from '@/lib/fridge-context';
+import { useI18n } from '@/lib/i18n-context';
 import FridgeChatbot from '@/components/FridgeChatbot';
+import LanguageSelector from '@/components/LanguageSelector';
 
-const links = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/add', icon: PlusCircle, label: 'Add Food' },
-  { to: '/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/recipes', icon: ChefHat, label: 'Recipes' },
-  { to: '/sustainability', icon: Leaf, label: 'Eco Score' },
-  { to: '/family', icon: Users, label: 'Family' },
+const linkDefs = [
+  { to: '/', icon: LayoutDashboard, labelKey: 'dashboard' as const },
+  { to: '/add', icon: PlusCircle, labelKey: 'addFood' as const },
+  { to: '/analytics', icon: BarChart3, labelKey: 'analytics' as const },
+  { to: '/recipes', icon: ChefHat, labelKey: 'recipes' as const },
+  { to: '/sustainability', icon: Leaf, labelKey: 'ecoScore' as const },
+  { to: '/family', icon: Users, labelKey: 'family' as const },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { unreadCount } = useFridge();
+  const { t } = useI18n();
   const location = useLocation();
 
   return (
@@ -25,17 +28,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="text-2xl">🧊</span>
             <h1 className="font-display text-xl font-semibold tracking-tight">FreshKeep</h1>
           </div>
-          <NavLink
-            to="/notifications"
-            className="relative rounded-xl p-2.5 transition-colors hover:bg-muted active:scale-95"
-          >
-            <Bell className="h-5 w-5 text-muted-foreground" />
-            {unreadCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[11px] font-semibold text-destructive-foreground">
-                {unreadCount}
-              </span>
-            )}
-          </NavLink>
+          <div className="flex items-center gap-2">
+            <LanguageSelector />
+            <NavLink
+              to="/notifications"
+              className="relative rounded-xl p-2.5 transition-colors hover:bg-muted active:scale-95"
+            >
+              <Bell className="h-5 w-5 text-muted-foreground" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[11px] font-semibold text-destructive-foreground">
+                  {unreadCount}
+                </span>
+              )}
+            </NavLink>
+          </div>
         </div>
       </header>
 
@@ -47,7 +53,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/90 backdrop-blur-sm">
         <div className="container flex items-center justify-around py-2">
-          {links.map(({ to, icon: Icon, label }) => {
+          {linkDefs.map(({ to, icon: Icon, labelKey }) => {
             const isActive = location.pathname === to;
             return (
               <NavLink
@@ -58,7 +64,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 }`}
               >
                 <Icon className="h-5 w-5" strokeWidth={isActive ? 2.2 : 1.8} />
-                {label}
+                {t(labelKey)}
               </NavLink>
             );
           })}

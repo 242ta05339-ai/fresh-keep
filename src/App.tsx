@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { I18nProvider } from "@/lib/i18n-context";
 import { FridgeProvider } from "@/lib/fridge-context";
 import { FamilyProvider } from "@/lib/family-context";
 import AppLayout from "@/components/AppLayout";
@@ -56,14 +57,16 @@ function AuthGate() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Sonner />
-      <AuthProvider>
-        <BrowserRouter>
-          <AuthGate />
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
+    <I18nProvider>
+      <TooltipProvider>
+        <Sonner />
+        <AuthProvider>
+          <BrowserRouter>
+            <AuthGate />
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </I18nProvider>
   </QueryClientProvider>
 );
 
