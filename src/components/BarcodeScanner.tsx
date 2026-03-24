@@ -37,11 +37,10 @@ function mapCategory(tags: string[] | undefined): string | undefined {
 
 export default function BarcodeScanner({ onProductFound, onClose }: BarcodeScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<'starting' | 'scanning' | 'looking-up' | 'error'>('starting');
   const [errorMsg, setErrorMsg] = useState('');
   const processingRef = useRef(false);
-  const isRunningRef = useRef(false);
+  const mountedRef = useRef(true);
 
   const lookupBarcode = useCallback(async (code: string) => {
     if (processingRef.current) return;
@@ -68,25 +67,37 @@ export default function BarcodeScanner({ onProductFound, onClose }: BarcodeScann
   }, [onProductFound]);
 
   useEffect(() => {
+    mountedRef.current = true;
     const elementId = 'barcode-reader';
     let scanner: Html5Qrcode | null = null;
 
     const start = async () => {
+      // Small delay to ensure DOM element is rendered
+      await new Promise(r => setTimeout(r, 100));
+      if (!mountedRef.current) return;
+
       try {
         scanner = new Html5Qrcode(elementId);
         scannerRef.current = scanner;
 
         await scanner.start(
           { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 280, height: 160 } },
+          {
+            fps: 15,
+            qrbox: { width: 280, height: 160 },
+            aspectRatio: 1.5,
+            disableFlip: false,
+          },
           (decodedText) => {
-            lookupBarcode(decodedText);
+            if (!processingRef.current) {
+              lookupBarcode(decodedText);
+            }
           },
           () => {}
         );
-        setStatus('scanning');
-        isRunningRef.current = true;
+        if (mountedRef.current) setStatus('scanning');
       } catch (err: any) {
+        if (!mountedRef.current) return;
         const msg = err?.message || String(err);
         if (/permission/i.test(msg)) {
           setErrorMsg('Camera permission denied. Please allow camera access and try again.');
@@ -102,9 +113,15 @@ export default function BarcodeScanner({ onProductFound, onClose }: BarcodeScann
     start();
 
     return () => {
-      if (scanner && isRunningRef.current) {
-        isRunningRef.current = false;
-        scanner.stop().then(() => scanner!.clear()).catch(() => {});
+      mountedRef.current = false;
+      const s = scannerRef.current;
+      scannerRef.current = null;
+      if (s) {
+        const state = s.getState();
+        // Only stop if actively scanning (state 2 = SCANNING)
+        if (state === 2) {
+          s.stop().catch(() => {});
+        }
       }
     };
   }, [lookupBarcode]);
@@ -129,11 +146,9 @@ export default function BarcodeScanner({ onProductFound, onClose }: BarcodeScann
           </div>
         ) : (
           <>
-            <div
-              ref={containerRef}
-              className="relative w-full max-w-sm overflow-hidden rounded-2xl border-2 border-primary/20 bg-black"
-            >
-              <div id="barcode-reader" className="w-full" />
+            <div className="relative w-full max-w-sm overflow-hidden rounded-2xl border-2 border-primary/20"
+                 style={{ minHeight: 260, backgroundColor: '#000' }}>
+              <div id="barcode-reader" className="w-full" style={{ minHeight: 240 }} />
               {status === 'looking-up' && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
