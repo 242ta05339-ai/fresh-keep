@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Users, UserPlus, Settings, Crown, Copy, LogOut, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, UserPlus, Crown, Copy, LogOut, Trash2, Link } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
