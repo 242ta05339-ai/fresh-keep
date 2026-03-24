@@ -7,7 +7,7 @@ import { computeSustainability } from '@/lib/sustainability';
 const TIER_EMOJI: Record<string, string> = { bronze: '🥉', silver: '🥈', gold: '🥇' };
 
 export default function Dashboard() {
-  const { items, removeItem } = useFridge();
+  const { items, removeItem, markConsumed } = useFridge();
 
   const sortedItems = [...items].sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime());
 
