@@ -56,6 +56,14 @@ export default function Family() {
     }
   };
 
+  const copyInviteLink = () => {
+    if (family?.invite_code) {
+      const link = `${window.location.origin}/family?join=${family.invite_code}`;
+      navigator.clipboard.writeText(link);
+      toast.success('Invite link copied! Share it with your family.');
+    }
+  };
+
   if (loading) return <div className="flex justify-center py-12 text-muted-foreground">Loading…</div>;
 
   return (
