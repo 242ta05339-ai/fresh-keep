@@ -56,14 +56,16 @@ function AuthGate() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Sonner />
-      <AuthProvider>
-        <BrowserRouter>
-          <AuthGate />
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
+    <I18nProvider>
+      <TooltipProvider>
+        <Sonner />
+        <AuthProvider>
+          <BrowserRouter>
+            <AuthGate />
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </I18nProvider>
   </QueryClientProvider>
 );
 
