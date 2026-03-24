@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from 'react';
 import { FoodItem, Notification as AppNotification } from './types';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './auth-context';
