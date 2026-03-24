@@ -31,9 +31,9 @@ function mapRowToItem(row: any): FoodItem {
   };
 }
 
-function generateNotifications(items: FoodItem[]): Notification[] {
+function generateNotifications(items: FoodItem[]): AppNotification[] {
   const now = Date.now();
-  const notifications: Notification[] = [];
+  const notifications: AppNotification[] = [];
 
   for (const item of items) {
     const daysLeft = Math.ceil((new Date(item.expiryDate).getTime() - now) / (1000 * 60 * 60 * 24));
