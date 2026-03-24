@@ -90,8 +90,8 @@ export default function Analytics() {
             <BarChart data={monthlySpending} barGap={4}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(35,20%,88%)" />
               <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} tickFormatter={v => `$${v}`} />
-              <Tooltip formatter={(v: number) => `$${v}`} />
+              <YAxis tick={{ fontSize: 12 }} tickFormatter={v => `₹${v}`} />
+              <Tooltip formatter={(v: number) => `₹${v}`} />
               <Bar dataKey="spent" fill="hsl(152,45%,38%)" radius={[4, 4, 0, 0]} name="Spent" />
               <Bar dataKey="wasted" fill="hsl(4,72%,56%)" radius={[4, 4, 0, 0]} name="Wasted" />
             </BarChart>
