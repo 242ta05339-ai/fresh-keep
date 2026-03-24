@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Users, UserPlus, Settings, Crown, Copy, LogOut, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, UserPlus, Crown, Copy, LogOut, Trash2, Link } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +15,17 @@ export default function Family() {
   const [inviteCode, setInviteCode] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Auto-join from invite link
+  useEffect(() => {
+    const joinCode = searchParams.get('join');
+    if (joinCode && !family && !loading) {
+      setInviteCode(joinCode);
+      setShowJoin(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, family, loading, setSearchParams]);
 
   const handleCreate = async () => {
     if (!familyName.trim()) return;
@@ -41,6 +53,14 @@ export default function Family() {
     if (family?.invite_code) {
       navigator.clipboard.writeText(family.invite_code);
       toast.success('Invite code copied!');
+    }
+  };
+
+  const copyInviteLink = () => {
+    if (family?.invite_code) {
+      const link = `${window.location.origin}/family?join=${family.invite_code}`;
+      navigator.clipboard.writeText(link);
+      toast.success('Invite link copied! Share it with your family.');
     }
   };
 
@@ -106,8 +126,11 @@ export default function Family() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>Invite code:</span>
               <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{family.invite_code}</code>
-              <button onClick={copyInviteCode} className="text-primary hover:text-primary/80 active:scale-95">
+              <button onClick={copyInviteCode} className="text-primary hover:text-primary/80 active:scale-95" title="Copy code">
                 <Copy className="h-3.5 w-3.5" />
+              </button>
+              <button onClick={copyInviteLink} className="text-primary hover:text-primary/80 active:scale-95" title="Copy invite link">
+                <Link className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>

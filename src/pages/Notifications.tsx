@@ -1,4 +1,5 @@
 import { useFridge } from '@/lib/fridge-context';
+import type { Notification as AppNotification } from '@/lib/types';
 import { Bell, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 
 const typeConfig = {

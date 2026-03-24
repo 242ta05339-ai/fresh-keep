@@ -106,8 +106,8 @@ export default function AddFood() {
     if (product.found && product.name) {
       setName(product.name);
       setCategory(cat);
-      setExpiryDate(guessShelfLife(product.name, cat));
-      setManualPrompt(`Found "${product.name}". Please confirm or adjust the expiry date, then tap Add to Fridge.`);
+      setExpiryDate('');
+      setManualPrompt(`Found "${product.name}". Please enter the expiry date (or leave blank for a smart default), then tap Add to Fridge.`);
       toast.success(`Found: ${product.name} — please confirm expiry date`);
     } else {
       setName('');
