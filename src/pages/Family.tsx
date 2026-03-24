@@ -15,6 +15,17 @@ export default function Family() {
   const [inviteCode, setInviteCode] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Auto-join from invite link
+  useEffect(() => {
+    const joinCode = searchParams.get('join');
+    if (joinCode && !family && !loading) {
+      setInviteCode(joinCode);
+      setShowJoin(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, family, loading, setSearchParams]);
 
   const handleCreate = async () => {
     if (!familyName.trim()) return;
