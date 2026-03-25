@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useFridge } from '@/lib/fridge-context';
 import { useI18n } from '@/lib/i18n-context';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 
 const COLORS = ['hsl(152,45%,38%)', 'hsl(28,80%,56%)', 'hsl(210,60%,55%)', 'hsl(38,92%,50%)', 'hsl(4,72%,56%)'];
 
@@ -83,15 +83,42 @@ export default function Analytics() {
       <section className="fade-in-up-delay-1 space-y-3">
         <h3 className="font-display text-lg font-semibold">{t('spendingVsWaste')}</h3>
         <div className="rounded-xl border bg-card p-4 shadow-sm">
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={monthlySpending} barGap={4}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(35,20%,88%)" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} tickFormatter={v => `₹${v}`} />
+          <ResponsiveContainer width="100%" height={280}>
+            <PieChart>
+              <Pie
+                data={monthlySpending}
+                dataKey="spent"
+                nameKey="month"
+                cx="30%"
+                cy="50%"
+                outerRadius={80}
+                label={({ name, value }) => `${name}: ₹${value}`}
+              >
+                {monthlySpending.map((_, i) => (
+                  <Cell key={`spent-${i}`} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Pie>
+              <Pie
+                data={monthlySpending}
+                dataKey="wasted"
+                nameKey="month"
+                cx="70%"
+                cy="50%"
+                outerRadius={80}
+                label={({ name, value }) => `${name}: ₹${value}`}
+              >
+                {monthlySpending.map((_, i) => (
+                  <Cell key={`wasted-${i}`} fill={COLORS[(i + 2) % COLORS.length]} opacity={0.7} />
+                ))}
+              </Pie>
               <Tooltip formatter={(v: number) => `₹${v}`} />
-              <Bar dataKey="spent" fill="hsl(152,45%,38%)" radius={[4, 4, 0, 0]} name={t('spent')} />
-              <Bar dataKey="wasted" fill="hsl(4,72%,56%)" radius={[4, 4, 0, 0]} name={t('wasted')} />
-            </BarChart>
+              <Legend
+                payload={[
+                  { value: t('spent'), type: 'circle', color: 'hsl(152,45%,38%)' },
+                  { value: t('wasted'), type: 'circle', color: 'hsl(4,72%,56%)' },
+                ]}
+              />
+            </PieChart>
           </ResponsiveContainer>
         </div>
       </section>
