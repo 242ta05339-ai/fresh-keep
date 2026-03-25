@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useFridge } from '@/lib/fridge-context';
+import { useI18n } from '@/lib/i18n-context';
 import FoodItemCard from '@/components/FoodItemCard';
 import { AlertTriangle, Package, TrendingDown } from 'lucide-react';
 import { computeSustainability } from '@/lib/sustainability';
@@ -8,6 +9,7 @@ const TIER_EMOJI: Record<string, string> = { bronze: '🥉', silver: '🥈', gol
 
 export default function Dashboard() {
   const { items, removeItem, markConsumed } = useFridge();
+  const { t } = useI18n();
 
   const sortedItems = [...items].sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime());
 
@@ -21,25 +23,25 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="fade-in-up">
-        <h2 className="font-display text-2xl font-semibold">Good morning 👋</h2>
-        <p className="text-muted-foreground">Here's what's in your fridge today.</p>
+        <h2 className="font-display text-2xl font-semibold">{t('goodMorning')}</h2>
+        <p className="text-muted-foreground">{t('fridgeToday')}</p>
       </div>
 
       <div className="grid grid-cols-3 gap-3 fade-in-up-delay-1">
         <div className="rounded-xl border bg-card p-4 shadow-sm">
           <Package className="h-5 w-5 text-primary mb-1" />
           <p className="text-2xl font-semibold tabular-nums">{items.length}</p>
-          <p className="text-xs text-muted-foreground">Total items</p>
+          <p className="text-xs text-muted-foreground">{t('totalItems')}</p>
         </div>
         <div className="rounded-xl border bg-card p-4 shadow-sm">
           <AlertTriangle className="h-5 w-5 text-warning mb-1" />
           <p className="text-2xl font-semibold tabular-nums">{expiringCount}</p>
-          <p className="text-xs text-muted-foreground">Expiring soon</p>
+          <p className="text-xs text-muted-foreground">{t('expiringSoon')}</p>
         </div>
         <div className="rounded-xl border bg-card p-4 shadow-sm">
           <TrendingDown className="h-5 w-5 text-success mb-1" />
           <p className="text-2xl font-semibold tabular-nums">{sustainability.wastePercentage}%</p>
-          <p className="text-xs text-muted-foreground">Waste rate</p>
+          <p className="text-xs text-muted-foreground">{t('wasteRate')}</p>
         </div>
       </div>
 
@@ -48,15 +50,15 @@ export default function Dashboard() {
           {TIER_EMOJI[sustainability.tier] || '🥉'}
         </div>
         <div>
-          <p className="font-medium capitalize">{sustainability.tier} Tier — {sustainability.score}/100</p>
+          <p className="font-medium capitalize">{sustainability.tier} {t('tier')} — {sustainability.score}/100</p>
           <p className="text-sm text-muted-foreground">
-            {sustainability.streakDays}-day streak · {sustainability.itemsSaved} items saved
+            {sustainability.streakDays}-{t('dayStreak')} · {sustainability.itemsSaved} {t('itemsSaved')}
           </p>
         </div>
       </div>
 
       <div className="fade-in-up-delay-3 space-y-2">
-        <h3 className="font-display text-lg font-semibold">Your Fridge</h3>
+        <h3 className="font-display text-lg font-semibold">{t('yourFridge')}</h3>
         <div className="space-y-2">
           {sortedItems.map((item, i) => (
             <FoodItemCard

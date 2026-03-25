@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useFridge } from '@/lib/fridge-context';
+import { useI18n } from '@/lib/i18n-context';
 import { Leaf, Flame, TrendingUp } from 'lucide-react';
 import { SustainabilityTier } from '@/lib/types';
 
@@ -11,11 +12,11 @@ const tierConfig: Record<SustainabilityTier, { emoji: string; next: string | nul
 
 export default function Sustainability() {
   const { items } = useFridge();
+  const { t } = useI18n();
 
   const data = useMemo(() => {
     if (!items.length) return null;
 
-    const today = new Date().toISOString().split('T')[0];
     const totalConsumed = items.reduce((sum, i) => sum + i.consumed, 0);
     const avgConsumed = totalConsumed / items.length;
     const wastePercentage = Math.round(100 - avgConsumed);
@@ -23,7 +24,6 @@ export default function Sustainability() {
     const tier: SustainabilityTier = score >= 80 ? 'gold' : score >= 50 ? 'silver' : 'bronze';
     const itemsSaved = items.filter(i => i.consumed >= 80).length;
 
-    // Streak: count items added on consecutive days
     const uniqueDates = [...new Set(items.map(i => i.addedDate))].sort().reverse();
     let streakDays = 0;
     const todayDate = new Date();
@@ -49,25 +49,25 @@ export default function Sustainability() {
 
     const tips: { icon: string; tip: string }[] = [];
     expiringSoon.forEach(i => {
-      tips.push({ icon: '⚡', tip: `Use ${i.name} soon — expires ${i.expiryDate}` });
+      tips.push({ icon: '⚡', tip: t('useSoon').replace('{name}', i.name).replace('{date}', i.expiryDate) });
     });
     if (tips.length === 0) {
-      tips.push({ icon: '✅', tip: 'Nothing expiring in the next 3 days — great job!' });
+      tips.push({ icon: '✅', tip: t('nothingExpiring') });
     }
-    tips.push({ icon: '📋', tip: 'Plan meals around expiring items first' });
+    tips.push({ icon: '📋', tip: t('planMeals') });
     return tips.slice(0, 4);
-  }, [items]);
+  }, [items, t]);
 
   if (!items.length) {
     return (
       <div className="space-y-6 max-w-lg mx-auto">
         <div className="fade-in-up">
-          <h2 className="font-display text-2xl font-semibold">Sustainability Score</h2>
-          <p className="text-muted-foreground">Your eco-friendly consumption journey.</p>
+          <h2 className="font-display text-2xl font-semibold">{t('sustainabilityScore')}</h2>
+          <p className="text-muted-foreground">{t('ecoJourney')}</p>
         </div>
         <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground">
           <p className="text-lg">🌱</p>
-          <p className="mt-2">Add items to your fridge to track your sustainability.</p>
+          <p className="mt-2">{t('addItemsSustain')}</p>
         </div>
       </div>
     );
@@ -79,11 +79,10 @@ export default function Sustainability() {
   return (
     <div className="space-y-6 max-w-lg mx-auto">
       <div className="fade-in-up">
-        <h2 className="font-display text-2xl font-semibold">Sustainability Score</h2>
-        <p className="text-muted-foreground">Your eco-friendly consumption journey.</p>
+        <h2 className="font-display text-2xl font-semibold">{t('sustainabilityScore')}</h2>
+        <p className="text-muted-foreground">{t('ecoJourney')}</p>
       </div>
 
-      {/* Score ring */}
       <div className="fade-in-up-delay-1 flex flex-col items-center rounded-xl border bg-card p-8 shadow-sm">
         <div className="relative flex h-36 w-36 items-center justify-center">
           <svg className="absolute inset-0" viewBox="0 0 144 144">
@@ -102,36 +101,34 @@ export default function Sustainability() {
             <p className="text-2xl font-bold tabular-nums">{data.score}</p>
           </div>
         </div>
-        <p className="mt-3 font-display text-lg font-semibold capitalize">{data.tier} Tier</p>
+        <p className="mt-3 font-display text-lg font-semibold capitalize">{data.tier} {t('tier')}</p>
         {tier.next && (
           <p className="text-sm text-muted-foreground">
-            {tier.threshold - data.score} more points to {tier.next}
+            {tier.threshold - data.score} {t('pointsTo')} {tier.next}
           </p>
         )}
       </div>
 
-      {/* Stats */}
       <div className="fade-in-up-delay-2 grid grid-cols-3 gap-3">
         <div className="flex flex-col items-center rounded-xl border bg-card p-4 shadow-sm">
           <Leaf className="h-5 w-5 text-success mb-1" />
           <p className="text-xl font-semibold tabular-nums">{data.itemsSaved}</p>
-          <p className="text-[11px] text-muted-foreground text-center">Items saved</p>
+          <p className="text-[11px] text-muted-foreground text-center">{t('itemsSaved')}</p>
         </div>
         <div className="flex flex-col items-center rounded-xl border bg-card p-4 shadow-sm">
           <Flame className="h-5 w-5 text-accent mb-1" />
           <p className="text-xl font-semibold tabular-nums">{data.streakDays}</p>
-          <p className="text-[11px] text-muted-foreground text-center">Day streak</p>
+          <p className="text-[11px] text-muted-foreground text-center">{t('dayStreak')}</p>
         </div>
         <div className="flex flex-col items-center rounded-xl border bg-card p-4 shadow-sm">
           <TrendingUp className="h-5 w-5 text-info mb-1" />
           <p className="text-xl font-semibold tabular-nums">{100 - data.wastePercentage}%</p>
-          <p className="text-[11px] text-muted-foreground text-center">Efficiency</p>
+          <p className="text-[11px] text-muted-foreground text-center">{t('efficiency')}</p>
         </div>
       </div>
 
-      {/* Tips */}
       <div className="fade-in-up-delay-3 space-y-3">
-        <h3 className="font-display text-lg font-semibold">Tips to Level Up</h3>
+        <h3 className="font-display text-lg font-semibold">{t('tipsToLevel')}</h3>
         {tips.map(({ icon, tip }) => (
           <div key={tip} className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-sm">
             <span className="text-lg">{icon}</span>

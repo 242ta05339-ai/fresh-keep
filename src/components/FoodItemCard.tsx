@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FoodItem, CATEGORY_EMOJI } from '@/lib/types';
+import { useI18n } from '@/lib/i18n-context';
 import { Trash2, Utensils } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -8,13 +9,6 @@ function daysUntilExpiry(expiryDate: string): number {
   now.setHours(0, 0, 0, 0);
   const exp = new Date(expiryDate);
   return Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-}
-
-function expiryLabel(days: number) {
-  if (days < 0) return { text: `${Math.abs(days)}d overdue`, className: 'bg-destructive/10 text-destructive' };
-  if (days === 0) return { text: 'Expires today', className: 'bg-destructive/10 text-destructive' };
-  if (days <= 3) return { text: `${days}d left`, className: 'bg-warning/10 text-warning' };
-  return { text: `${days}d left`, className: 'bg-success/10 text-success' };
 }
 
 const CONSUME_OPTIONS = [25, 50, 75, 100];
@@ -28,8 +22,16 @@ interface Props {
 
 export default function FoodItemCard({ item, onRemove, onConsume, style }: Props) {
   const [showConsume, setShowConsume] = useState(false);
+  const { t } = useI18n();
   const days = daysUntilExpiry(item.expiryDate);
-  const label = expiryLabel(days);
+
+  const label = days < 0
+    ? { text: `${Math.abs(days)}${t('dOverdue')}`, className: 'bg-destructive/10 text-destructive' }
+    : days === 0
+    ? { text: t('expiresToday'), className: 'bg-destructive/10 text-destructive' }
+    : days <= 3
+    ? { text: `${days}${t('dLeft')}`, className: 'bg-warning/10 text-warning' }
+    : { text: `${days}${t('dLeft')}`, className: 'bg-success/10 text-success' };
 
   return (
     <div
@@ -48,13 +50,12 @@ export default function FoodItemCard({ item, onRemove, onConsume, style }: Props
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            {item.quantity} {item.unit} · added by {item.addedBy}
+            {item.quantity} {item.unit} · {t('addedBy')} {item.addedBy}
           </p>
         </div>
 
-        {/* Consumed percentage display */}
         <div className="flex flex-col items-end gap-1 min-w-[60px]">
-          <span className="text-[11px] text-muted-foreground">{item.consumed}% used</span>
+          <span className="text-[11px] text-muted-foreground">{item.consumed}% {t('used')}</span>
           <div className="h-1.5 w-14 rounded-full bg-muted overflow-hidden">
             <div
               className="h-full rounded-full bg-primary transition-all"
@@ -70,7 +71,7 @@ export default function FoodItemCard({ item, onRemove, onConsume, style }: Props
           onClick={() => setShowConsume(!showConsume)}
         >
           <Utensils className="h-3.5 w-3.5" />
-          Consume
+          {t('consume')}
         </Button>
 
         <button
@@ -83,7 +84,7 @@ export default function FoodItemCard({ item, onRemove, onConsume, style }: Props
 
       {showConsume && (
         <div className="mt-2 flex items-center gap-2 border-t pt-2">
-          <span className="text-xs text-muted-foreground mr-1">Set used:</span>
+          <span className="text-xs text-muted-foreground mr-1">{t('setUsed')}</span>
           {CONSUME_OPTIONS.map(pct => (
             <Button
               key={pct}

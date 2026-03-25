@@ -2,9 +2,103 @@ import { useState, useRef, useCallback } from 'react';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n-context';
 import { toast } from 'sonner';
+import { FoodCategory } from '@/lib/types';
+
+interface ParsedVoiceData {
+  name: string;
+  quantity?: string;
+  unit?: string;
+  category?: FoodCategory;
+  cost?: string;
+  expiryDate?: string;
+}
 
 interface VoiceInputProps {
-  onResult: (text: string) => void;
+  onResult: (data: ParsedVoiceData) => void;
+}
+
+const CATEGORY_KEYWORDS: Record<string, FoodCategory> = {
+  milk: 'dairy', cheese: 'dairy', yogurt: 'dairy', butter: 'dairy', cream: 'dairy', curd: 'dairy', paneer: 'dairy',
+  दूध: 'dairy', दही: 'dairy', पनीर: 'dairy', मक्खन: 'dairy',
+  apple: 'produce', banana: 'produce', tomato: 'produce', potato: 'produce', onion: 'produce',
+  spinach: 'produce', carrot: 'produce', vegetable: 'produce', fruit: 'produce', sabzi: 'produce',
+  सब्जी: 'produce', फल: 'produce', टमाटर: 'produce', आलू: 'produce', प्याज: 'produce',
+  chicken: 'meat', mutton: 'meat', fish: 'meat', egg: 'meat', eggs: 'meat', meat: 'meat',
+  मांस: 'meat', चिकन: 'meat', मछली: 'meat', अंडा: 'meat',
+  rice: 'grains', wheat: 'grains', flour: 'grains', bread: 'grains', atta: 'grains', roti: 'grains',
+  चावल: 'grains', आटा: 'grains', रोटी: 'grains',
+  juice: 'beverages', water: 'beverages', soda: 'beverages', tea: 'beverages', coffee: 'beverages',
+  जूस: 'beverages', पानी: 'beverages', चाय: 'beverages',
+  chips: 'snacks', biscuit: 'snacks', cookie: 'snacks', chocolate: 'snacks', namkeen: 'snacks',
+  sauce: 'condiments', ketchup: 'condiments', pickle: 'condiments', achaar: 'condiments',
+  frozen: 'frozen', ice: 'frozen',
+};
+
+const UNIT_KEYWORDS: Record<string, string> = {
+  kg: 'kg', kilogram: 'kg', kilo: 'kg', किलो: 'kg',
+  gram: 'grams', grams: 'grams', g: 'grams', ग्राम: 'grams',
+  liter: 'liters', litre: 'liters', liters: 'liters', l: 'liters', लीटर: 'liters',
+  ml: 'ml', milliliter: 'ml', मिलीलीटर: 'ml',
+  piece: 'pieces', pieces: 'pieces', pcs: 'pieces', टुकड़े: 'pieces', पीस: 'pieces',
+  dozen: 'dozen', दर्जन: 'dozen',
+  packet: 'packets', pack: 'packets', packets: 'packets', पैकेट: 'packets',
+  bottle: 'bottles', bottles: 'bottles', बोतल: 'bottles',
+  box: 'boxes', boxes: 'boxes', डिब्बा: 'boxes',
+};
+
+function parseVoiceText(text: string): ParsedVoiceData {
+  const lower = text.toLowerCase().trim();
+  const result: ParsedVoiceData = { name: text };
+
+  // Extract cost (numbers with rupees/rs/₹)
+  const costMatch = lower.match(/(?:₹|rs\.?|rupees?|रुपये?)\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:₹|rs\.?|rupees?|रुपये?)/);
+  if (costMatch) {
+    result.cost = costMatch[1] || costMatch[2];
+  }
+
+  // Extract quantity (number followed by unit or standalone)
+  const qtyMatch = lower.match(/(\d+(?:\.\d+)?)\s*(kg|kilogram|kilo|gram|grams|g|liter|litre|liters|l|ml|milliliter|piece|pieces|pcs|dozen|packet|pack|packets|bottle|bottles|box|boxes|किलो|ग्राम|लीटर|मिलीलीटर|टुकड़े|पीस|दर्जन|पैकेट|बोतल|डिब्बा)\b/i);
+  if (qtyMatch) {
+    result.quantity = qtyMatch[1];
+    const unitKey = qtyMatch[2].toLowerCase();
+    result.unit = UNIT_KEYWORDS[unitKey] || unitKey;
+  } else {
+    // Just a number at start
+    const numMatch = lower.match(/^(\d+)\s+/);
+    if (numMatch) {
+      result.quantity = numMatch[1];
+    }
+  }
+
+  // Detect category from keywords
+  for (const [keyword, cat] of Object.entries(CATEGORY_KEYWORDS)) {
+    if (lower.includes(keyword)) {
+      result.category = cat;
+      break;
+    }
+  }
+
+  // Extract expiry date patterns
+  const dateMatch = lower.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if (dateMatch) {
+    const day = dateMatch[1].padStart(2, '0');
+    const month = dateMatch[2].padStart(2, '0');
+    let year = dateMatch[3];
+    if (year.length === 2) year = '20' + year;
+    result.expiryDate = `${year}-${month}-${day}`;
+  }
+
+  // Clean up the name: remove cost, quantity+unit, date patterns
+  let cleanName = text;
+  if (costMatch) cleanName = cleanName.replace(costMatch[0], '');
+  if (qtyMatch) cleanName = cleanName.replace(qtyMatch[0], '');
+  if (dateMatch) cleanName = cleanName.replace(dateMatch[0], '');
+  // Remove common filler words
+  cleanName = cleanName.replace(/\b(add|rupees?|rs\.?|₹|रुपये?|expiry|expires?|date|cost|price|quantity|category)\b/gi, '');
+  cleanName = cleanName.replace(/\s+/g, ' ').trim();
+  if (cleanName) result.name = cleanName;
+
+  return result;
 }
 
 export default function VoiceInput({ onResult }: VoiceInputProps) {
@@ -33,7 +127,8 @@ export default function VoiceInput({ onResult }: VoiceInputProps) {
 
     recognition.onresult = (event: any) => {
       const text = event.results[0][0].transcript;
-      onResult(text);
+      const parsed = parseVoiceText(text);
+      onResult(parsed);
       setListening(false);
       toast.success(`🎙️ "${text}"`);
     };
