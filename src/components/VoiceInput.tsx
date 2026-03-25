@@ -46,6 +46,58 @@ const UNIT_KEYWORDS: Record<string, string> = {
   box: 'boxes', boxes: 'boxes', डिब्बा: 'boxes',
 };
 
+function parseRelativeDate(text: string): string | undefined {
+  const lower = text.toLowerCase();
+  const today = new Date();
+
+  // "tomorrow"
+  if (/\btomorrow\b|\bkal\b|कल/.test(lower)) {
+    const d = new Date(today); d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  }
+  // "day after tomorrow"
+  if (/\bday after tomorrow\b|\bparson\b|परसों/.test(lower)) {
+    const d = new Date(today); d.setDate(d.getDate() + 2);
+    return d.toISOString().split('T')[0];
+  }
+  // "next week"
+  if (/\bnext week\b|\bagle hafte\b|अगले हफ्ते/.test(lower)) {
+    const d = new Date(today); d.setDate(d.getDate() + 7);
+    return d.toISOString().split('T')[0];
+  }
+  // "next month"
+  if (/\bnext month\b|\bagle mahine\b|अगले महीने/.test(lower)) {
+    const d = new Date(today); d.setMonth(d.getMonth() + 1);
+    return d.toISOString().split('T')[0];
+  }
+  // "in X days"
+  const inDaysMatch = lower.match(/\bin\s+(\d+)\s+days?\b|(\d+)\s+din\b|(\d+)\s+दिन/);
+  if (inDaysMatch) {
+    const days = parseInt(inDaysMatch[1] || inDaysMatch[2] || inDaysMatch[3]);
+    const d = new Date(today); d.setDate(d.getDate() + days);
+    return d.toISOString().split('T')[0];
+  }
+  // "in X weeks"
+  const inWeeksMatch = lower.match(/\bin\s+(\d+)\s+weeks?\b|(\d+)\s+hafte\b|(\d+)\s+हफ्ते/);
+  if (inWeeksMatch) {
+    const weeks = parseInt(inWeeksMatch[1] || inWeeksMatch[2] || inWeeksMatch[3]);
+    const d = new Date(today); d.setDate(d.getDate() + weeks * 7);
+    return d.toISOString().split('T')[0];
+  }
+  // "in X months"
+  const inMonthsMatch = lower.match(/\bin\s+(\d+)\s+months?\b|(\d+)\s+mahine\b|(\d+)\s+महीने/);
+  if (inMonthsMatch) {
+    const months = parseInt(inMonthsMatch[1] || inMonthsMatch[2] || inMonthsMatch[3]);
+    const d = new Date(today); d.setMonth(d.getMonth() + months);
+    return d.toISOString().split('T')[0];
+  }
+  // "today"
+  if (/\btoday\b|\baaj\b|आज/.test(lower)) {
+    return today.toISOString().split('T')[0];
+  }
+  return undefined;
+}
+
 function parseVoiceText(text: string): ParsedVoiceData {
   const lower = text.toLowerCase().trim();
   const result: ParsedVoiceData = { name: text };
@@ -63,7 +115,6 @@ function parseVoiceText(text: string): ParsedVoiceData {
     const unitKey = qtyMatch[2].toLowerCase();
     result.unit = UNIT_KEYWORDS[unitKey] || unitKey;
   } else {
-    // Just a number at start
     const numMatch = lower.match(/^(\d+)\s+/);
     if (numMatch) {
       result.quantity = numMatch[1];
@@ -78,9 +129,12 @@ function parseVoiceText(text: string): ParsedVoiceData {
     }
   }
 
-  // Extract expiry date patterns
+  // Extract expiry date - try relative dates first, then absolute
+  const relativeDate = parseRelativeDate(lower);
   const dateMatch = lower.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-  if (dateMatch) {
+  if (relativeDate) {
+    result.expiryDate = relativeDate;
+  } else if (dateMatch) {
     const day = dateMatch[1].padStart(2, '0');
     const month = dateMatch[2].padStart(2, '0');
     let year = dateMatch[3];
@@ -88,14 +142,19 @@ function parseVoiceText(text: string): ParsedVoiceData {
     result.expiryDate = `${year}-${month}-${day}`;
   }
 
-  // Clean up the name: remove cost, quantity+unit, date patterns
+  // Clean up the name
   let cleanName = text;
   if (costMatch) cleanName = cleanName.replace(costMatch[0], '');
   if (qtyMatch) cleanName = cleanName.replace(qtyMatch[0], '');
   if (dateMatch) cleanName = cleanName.replace(dateMatch[0], '');
-  // Remove common filler words
-  cleanName = cleanName.replace(/\b(add|rupees?|rs\.?|₹|रुपये?|expiry|expires?|date|cost|price|quantity|category)\b/gi, '');
-  cleanName = cleanName.replace(/\s+/g, ' ').trim();
+  // Remove relative date phrases
+  cleanName = cleanName.replace(/\b(tomorrow|today|day after tomorrow|next week|next month|in \d+ days?|in \d+ weeks?|in \d+ months?|expires?|expiry|kal|parson|aaj|agle hafte|agle mahine)\b/gi, '');
+  cleanName = cleanName.replace(/\b(add|rupees?|rs\.?|₹|रुपये?|date|cost|price|quantity|category|कल|परसों|आज|अगले हफ्ते|अगले महीने|\d+ दिन|\d+ हफ्ते|\d+ महीने)\b/gi, '');
+  // Remove category words from name
+  for (const keyword of Object.keys(CATEGORY_KEYWORDS)) {
+    if (keyword.length > 3) cleanName = cleanName.replace(new RegExp(`\\b${keyword}\\b`, 'gi'), '');
+  }
+  cleanName = cleanName.replace(/[,،]/g, ' ').replace(/\s+/g, ' ').trim();
   if (cleanName) result.name = cleanName;
 
   return result;
