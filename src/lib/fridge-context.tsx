@@ -122,7 +122,16 @@ export function FridgeProvider({ children }: { children: ReactNode }) {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Also refetch when the tab becomes visible again (prevents stale data on mobile)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchItems();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [fetchItems]);
 
   // Browser push notifications for urgent items
