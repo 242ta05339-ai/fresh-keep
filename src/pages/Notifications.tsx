@@ -1,4 +1,5 @@
 import { useFridge } from '@/lib/fridge-context';
+import { useI18n } from '@/lib/i18n-context';
 import type { Notification as AppNotification } from '@/lib/types';
 import { Bell, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 
@@ -10,13 +11,14 @@ const typeConfig = {
 
 export default function Notifications() {
   const { notifications, markNotificationRead } = useFridge();
+  const { t } = useI18n();
   const sorted = [...notifications].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   return (
     <div className="space-y-6 max-w-lg mx-auto">
       <div className="fade-in-up">
-        <h2 className="font-display text-2xl font-semibold">Notifications</h2>
-        <p className="text-muted-foreground">Stay on top of your fridge.</p>
+        <h2 className="font-display text-2xl font-semibold">{t('notifications')}</h2>
+        <p className="text-muted-foreground">{t('stayOnTop')}</p>
       </div>
 
       <div className="space-y-2">

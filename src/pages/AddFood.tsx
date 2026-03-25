@@ -96,8 +96,13 @@ export default function AddFood() {
     }
   };
 
-  const handleVoiceResult = (text: string) => {
-    setName(text);
+  const handleVoiceResult = (data: { name: string; quantity?: string; unit?: string; category?: FoodCategory; cost?: string; expiryDate?: string }) => {
+    setName(data.name);
+    if (data.quantity) setQuantity(data.quantity);
+    if (data.unit) setUnit(data.unit);
+    if (data.category) setCategory(data.category);
+    if (data.cost) setCost(data.cost);
+    if (data.expiryDate) setExpiryDate(data.expiryDate);
     setManualPrompt('');
   };
 
@@ -115,7 +120,6 @@ export default function AddFood() {
         />
       )}
 
-      {/* Barcode + Voice input buttons */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <button
           onClick={() => setShowScanner(true)}

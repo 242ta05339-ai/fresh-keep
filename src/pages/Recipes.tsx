@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useFridge } from '@/lib/fridge-context';
+import { useI18n } from '@/lib/i18n-context';
 import { Clock, Users, ChefHat } from 'lucide-react';
 
 interface GeneratedRecipe {
@@ -24,11 +25,11 @@ const RECIPE_TEMPLATES: { title: string; minutes: number; servings: number; keyw
 
 export default function Recipes() {
   const { items } = useFridge();
+  const { t } = useI18n();
 
   const recipes = useMemo<GeneratedRecipe[]>(() => {
     if (!items.length) return [];
 
-    // Filter out expired items
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     const validItems = items.filter(i => new Date(i.expiryDate) >= now);
@@ -63,12 +64,12 @@ export default function Recipes() {
     return (
       <div className="space-y-6">
         <div className="fade-in-up">
-          <h2 className="font-display text-2xl font-semibold">Recipe Suggestions</h2>
-          <p className="text-muted-foreground">Use up items before they expire.</p>
+          <h2 className="font-display text-2xl font-semibold">{t('recipeSuggestions')}</h2>
+          <p className="text-muted-foreground">{t('useUpItems')}</p>
         </div>
         <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground">
           <p className="text-lg">🍳</p>
-          <p className="mt-2">Add items to your fridge to get recipe ideas.</p>
+          <p className="mt-2">{t('addItemsRecipes')}</p>
         </div>
       </div>
     );
@@ -77,14 +78,14 @@ export default function Recipes() {
   return (
     <div className="space-y-6">
       <div className="fade-in-up">
-        <h2 className="font-display text-2xl font-semibold">Recipe Suggestions</h2>
-        <p className="text-muted-foreground">Based on what's in your fridge — prioritizing items expiring soon.</p>
+        <h2 className="font-display text-2xl font-semibold">{t('recipeSuggestions')}</h2>
+        <p className="text-muted-foreground">{t('recipeDesc')}</p>
       </div>
 
       <div className="space-y-4">
         {recipes.length === 0 && (
           <div className="rounded-xl border bg-card p-6 text-center text-muted-foreground">
-            <p>No recipe matches found for your current items. Try adding more variety!</p>
+            <p>{t('noRecipeMatch')}</p>
           </div>
         )}
         {recipes.map((recipe, i) => (
@@ -97,8 +98,8 @@ export default function Recipes() {
               <div>
                 <h3 className="font-display text-lg font-semibold">{recipe.title}</h3>
                 <div className="flex gap-3 mt-1 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {recipe.readyInMinutes}m</span>
-                  <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {recipe.servings} servings</span>
+                  <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {recipe.readyInMinutes}{t('minutes')}</span>
+                  <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {recipe.servings} {t('servings')}</span>
                 </div>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">

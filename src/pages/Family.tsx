@@ -6,18 +6,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useFamily } from '@/lib/family-context';
 import { useAuth } from '@/lib/auth-context';
+import { useI18n } from '@/lib/i18n-context';
 import { toast } from 'sonner';
 
 export default function Family() {
   const { family, members, loading, createFamily, joinFamily, removeMember, isOwner } = useFamily();
   const { user, signOut } = useAuth();
+  const { t } = useI18n();
   const [familyName, setFamilyName] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Auto-join from invite link
   useEffect(() => {
     const joinCode = searchParams.get('join');
     if (joinCode && !family && !loading) {
@@ -52,7 +53,7 @@ export default function Family() {
   const copyInviteCode = () => {
     if (family?.invite_code) {
       navigator.clipboard.writeText(family.invite_code);
-      toast.success('Invite code copied!');
+      toast.success(t('inviteCodeCopied'));
     }
   };
 
@@ -60,21 +61,21 @@ export default function Family() {
     if (family?.invite_code) {
       const link = `${window.location.origin}/family?join=${family.invite_code}`;
       navigator.clipboard.writeText(link);
-      toast.success('Invite link copied! Share it with your family.');
+      toast.success(t('inviteLinkCopied'));
     }
   };
 
-  if (loading) return <div className="flex justify-center py-12 text-muted-foreground">Loading…</div>;
+  if (loading) return <div className="flex justify-center py-12 text-muted-foreground">{t('loading')}</div>;
 
   return (
     <div className="space-y-6 max-w-lg mx-auto">
       <div className="fade-in-up flex items-center justify-between">
         <div>
-          <h2 className="font-display text-2xl font-semibold">Family Sharing</h2>
-          <p className="text-muted-foreground">Manage who has access to your fridge.</p>
+          <h2 className="font-display text-2xl font-semibold">{t('familySharing')}</h2>
+          <p className="text-muted-foreground">{t('manageFridge')}</p>
         </div>
         <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground">
-          <LogOut className="h-4 w-4" /> Sign Out
+          <LogOut className="h-4 w-4" /> {t('signOut')}
         </Button>
       </div>
 
@@ -82,49 +83,48 @@ export default function Family() {
         <div className="fade-in-up-delay-1 space-y-4">
           <div className="rounded-xl border bg-card p-6 text-center space-y-3">
             <Users className="h-10 w-10 mx-auto text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Create a family group or join one with an invite code.</p>
+            <p className="text-sm text-muted-foreground">{t('createOrJoin')}</p>
           </div>
 
           {showCreate ? (
             <div className="rounded-xl border bg-card p-4 space-y-3">
-              <Label>Family Name</Label>
+              <Label>{t('familyName')}</Label>
               <Input placeholder="e.g. The Smiths" value={familyName} onChange={e => setFamilyName(e.target.value)} />
               <div className="flex gap-2">
-                <Button onClick={handleCreate} className="flex-1">Create</Button>
-                <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+                <Button onClick={handleCreate} className="flex-1">{t('create')}</Button>
+                <Button variant="outline" onClick={() => setShowCreate(false)}>{t('cancel')}</Button>
               </div>
             </div>
           ) : (
             <Button className="w-full" size="lg" onClick={() => { setShowCreate(true); setShowJoin(false); }}>
-              <Users className="h-4 w-4" /> Create Family Group
+              <Users className="h-4 w-4" /> {t('createFamilyGroup')}
             </Button>
           )}
 
           {showJoin ? (
             <div className="rounded-xl border bg-card p-4 space-y-3">
-              <Label>Invite Code</Label>
-              <Input placeholder="Paste invite code" value={inviteCode} onChange={e => setInviteCode(e.target.value)} />
+              <Label>{t('inviteCode')}</Label>
+              <Input placeholder={t('pasteInviteCode')} value={inviteCode} onChange={e => setInviteCode(e.target.value)} />
               <div className="flex gap-2">
-                <Button onClick={handleJoin} className="flex-1">Join</Button>
-                <Button variant="outline" onClick={() => setShowJoin(false)}>Cancel</Button>
+                <Button onClick={handleJoin} className="flex-1">{t('join')}</Button>
+                <Button variant="outline" onClick={() => setShowJoin(false)}>{t('cancel')}</Button>
               </div>
             </div>
           ) : (
             <Button className="w-full" variant="outline" size="lg" onClick={() => { setShowJoin(true); setShowCreate(false); }}>
-              <UserPlus className="h-4 w-4" /> Join with Invite Code
+              <UserPlus className="h-4 w-4" /> {t('joinWithInvite')}
             </Button>
           )}
         </div>
       ) : (
         <>
-          {/* Family info */}
           <div className="fade-in-up-delay-1 rounded-xl border bg-card p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-lg">{family.name}</h3>
               {isOwner && <Crown className="h-4 w-4 text-yellow-500" />}
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Invite code:</span>
+              <span>{t('inviteCodeLabel')}</span>
               <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{family.invite_code}</code>
               <button onClick={copyInviteCode} className="text-primary hover:text-primary/80 active:scale-95" title="Copy code">
                 <Copy className="h-3.5 w-3.5" />
@@ -135,9 +135,8 @@ export default function Family() {
             </div>
           </div>
 
-          {/* Members */}
           <div className="fade-in-up-delay-2 space-y-2">
-            <h3 className="font-display text-lg font-semibold">Members ({members.length})</h3>
+            <h3 className="font-display text-lg font-semibold">{t('members')} ({members.length})</h3>
             {members.map((member, i) => (
               <div
                 key={member.id}
