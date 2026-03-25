@@ -26,7 +26,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Get initial session first, then listen for changes
+    let initialDone = false;
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!initialDone) {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) fetchProfile(session.user.id);
+        setLoading(false);
+        initialDone = true;
+      }
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      initialDone = true;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -34,13 +48,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setProfile(null);
       }
-      setLoading(false);
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
       setLoading(false);
     });
 
