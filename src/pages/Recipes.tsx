@@ -1,64 +1,14 @@
 import { useMemo } from 'react';
 import { useFridge } from '@/lib/fridge-context';
 import { useI18n } from '@/lib/i18n-context';
-import { Clock, Users, ChefHat } from 'lucide-react';
-
-interface GeneratedRecipe {
-  id: string;
-  title: string;
-  readyInMinutes: number;
-  servings: number;
-  usedIngredients: string[];
-  missedIngredients: string[];
-}
-
-const RECIPE_TEMPLATES: { title: string; minutes: number; servings: number; keywords: string[]; missing: string[] }[] = [
-  { title: 'Quick Stir-Fry', minutes: 20, servings: 3, keywords: ['chicken', 'meat', 'vegetable', 'spinach', 'pepper'], missing: ['Soy Sauce', 'Garlic'] },
-  { title: 'Smoothie Bowl', minutes: 5, servings: 1, keywords: ['milk', 'yogurt', 'berry', 'fruit', 'banana'], missing: ['Granola', 'Honey'] },
-  { title: 'Toast & Eggs', minutes: 10, servings: 2, keywords: ['bread', 'egg', 'avocado', 'cheese'], missing: [] },
-  { title: 'Fresh Salad', minutes: 10, servings: 2, keywords: ['spinach', 'lettuce', 'tomato', 'cucumber', 'produce'], missing: ['Dressing', 'Croutons'] },
-  { title: 'Cheesy Omelette', minutes: 15, servings: 2, keywords: ['egg', 'cheese', 'pepper', 'mushroom'], missing: ['Herbs'] },
-  { title: 'Pasta with Veggies', minutes: 25, servings: 4, keywords: ['tomato', 'pepper', 'spinach', 'cheese'], missing: ['Pasta', 'Olive Oil'] },
-  { title: 'Fruit Yogurt Parfait', minutes: 5, servings: 1, keywords: ['yogurt', 'berry', 'fruit'], missing: ['Granola'] },
-  { title: 'Grilled Sandwich', minutes: 15, servings: 2, keywords: ['bread', 'cheese', 'meat', 'chicken'], missing: ['Butter'] },
-];
+import { generateRecipes } from '@/lib/recipe-engine';
+import { Clock, Users, ChefHat, Flame } from 'lucide-react';
 
 export default function Recipes() {
   const { items } = useFridge();
   const { t } = useI18n();
 
-  const recipes = useMemo<GeneratedRecipe[]>(() => {
-    if (!items.length) return [];
-
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const validItems = items.filter(i => new Date(i.expiryDate) >= now);
-    if (!validItems.length) return [];
-
-    const expiringFirst = [...validItems].sort((a, b) => a.expiryDate.localeCompare(b.expiryDate));
-
-    const matched: GeneratedRecipe[] = [];
-
-    for (const template of RECIPE_TEMPLATES) {
-      const used = expiringFirst.filter(item =>
-        template.keywords.some(kw =>
-          item.name.toLowerCase().includes(kw) || item.category.toLowerCase().includes(kw)
-        )
-      );
-      if (used.length > 0) {
-        matched.push({
-          id: template.title,
-          title: template.title,
-          readyInMinutes: template.minutes,
-          servings: template.servings,
-          usedIngredients: used.map(i => i.name),
-          missedIngredients: template.missing,
-        });
-      }
-    }
-
-    return matched.slice(0, 6);
-  }, [items]);
+  const recipes = useMemo(() => generateRecipes(items), [items]);
 
   if (!items.length) {
     return (
@@ -95,9 +45,17 @@ export default function Recipes() {
             style={{ animationDelay: `${i * 0.1}s` }}
           >
             <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-display text-lg font-semibold">{recipe.title}</h3>
-                <div className="flex gap-3 mt-1 text-sm text-muted-foreground">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-display text-lg font-semibold">{t(recipe.titleKey as any)}</h3>
+                  {recipe.priority > 90 && (
+                    <span className="flex items-center gap-0.5 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
+                      <Flame className="h-3 w-3" /> {t('expiringSoon')}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">{t(recipe.descKey as any)}</p>
+                <div className="flex gap-3 mt-1.5 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {recipe.readyInMinutes}{t('minutes')}</span>
                   <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {recipe.servings} {t('servings')}</span>
                 </div>
