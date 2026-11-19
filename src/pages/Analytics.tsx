@@ -1,13 +1,15 @@
 import { useMemo } from 'react';
 import { useFridge } from '@/lib/fridge-context';
 import { useI18n } from '@/lib/i18n-context';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 
-const COLORS = ['hsl(152,45%,38%)', 'hsl(28,80%,56%)', 'hsl(210,60%,55%)', 'hsl(38,92%,50%)', 'hsl(4,72%,56%)'];
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--info))', 'hsl(var(--warning))', 'hsl(var(--destructive))'];
 
 export default function Analytics() {
   const { items } = useFridge();
   const { t } = useI18n();
+  const isMobile = useIsMobile();
 
   const stats = useMemo(() => {
     if (!items.length) return null;
@@ -74,62 +76,64 @@ export default function Analytics() {
   const { mostConsumed, mostWasted, monthlySpending, purchaseFrequency } = stats;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7 sm:space-y-8">
       <div className="fade-in-up">
         <h2 className="font-display text-2xl font-semibold">{t('analytics')}</h2>
         <p className="text-muted-foreground">{t('understand')}</p>
       </div>
 
-      <section className="fade-in-up-delay-1 space-y-3">
+      <section className="fade-in-up-delay-1 min-w-0 space-y-3">
         <h3 className="font-display text-lg font-semibold">{t('spendingVsWaste')}</h3>
-        <div className="rounded-xl border bg-card p-4 shadow-sm">
-          <ResponsiveContainer width="100%" height={280}>
-            <PieChart>
-              <Pie
-                data={monthlySpending}
-                dataKey="spent"
-                nameKey="month"
-                cx="30%"
-                cy="50%"
-                outerRadius={80}
-                label={({ name, value }) => `${name}: ₹${value}`}
-              >
-                {monthlySpending.map((_, i) => (
-                  <Cell key={`spent-${i}`} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Pie
-                data={monthlySpending}
-                dataKey="wasted"
-                nameKey="month"
-                cx="70%"
-                cy="50%"
-                outerRadius={80}
-                label={({ name, value }) => `${name}: ₹${value}`}
-              >
-                {monthlySpending.map((_, i) => (
-                  <Cell key={`wasted-${i}`} fill={COLORS[(i + 2) % COLORS.length]} opacity={0.7} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(v: number) => `₹${v}`} />
-              <Legend
-                payload={[
-                  { value: t('spent'), type: 'circle', color: 'hsl(152,45%,38%)' },
-                  { value: t('wasted'), type: 'circle', color: 'hsl(4,72%,56%)' },
-                ]}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+        <div className="overflow-hidden rounded-xl border bg-card p-3 shadow-sm sm:p-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            {[
+              { key: 'spent' as const, label: t('spent') },
+              { key: 'wasted' as const, label: t('wasted') },
+            ].map(({ key, label }) => (
+              <div key={key} className="min-w-0 rounded-lg border bg-background/60 p-2 sm:p-3">
+                <p className="px-1 text-sm font-semibold">{label}</p>
+                <ResponsiveContainer width="100%" height={isMobile ? 190 : 230}>
+                  <PieChart>
+                    <Pie
+                      data={monthlySpending}
+                      dataKey={key}
+                      nameKey="month"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={isMobile ? 42 : 52}
+                      outerRadius={isMobile ? 68 : 82}
+                      paddingAngle={2}
+                      label={false}
+                    >
+                      {monthlySpending.map((_, i) => (
+                        <Cell key={`${key}-${i}`} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value: number) => `₹${value}`} />
+                    <Legend verticalAlign="bottom" height={32} iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap justify-center gap-x-3 gap-y-1 border-t pt-3">
+            {monthlySpending.map((category, i) => (
+              <span key={category.month} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                <span className="max-w-28 truncate">{category.month}</span>
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
-      <section className="fade-in-up-delay-2 space-y-3">
+      <section className="fade-in-up-delay-2 min-w-0 space-y-3">
         <h3 className="font-display text-lg font-semibold">{t('mostConsumed')}</h3>
-        <div className="rounded-xl border bg-card p-4 shadow-sm">
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={mostConsumed} layout="vertical">
-              <XAxis type="number" tick={{ fontSize: 12 }} unit="%" />
-              <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={80} />
+        <div className="overflow-hidden rounded-xl border bg-card p-3 shadow-sm sm:p-4">
+          <ResponsiveContainer width="100%" height={isMobile ? 220 : 240}>
+            <BarChart data={mostConsumed} layout="vertical" margin={{ top: 4, right: 12, bottom: 4, left: 0 }}>
+              <XAxis type="number" tick={{ fontSize: 11 }} unit="%" />
+              <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={isMobile ? 68 : 90} />
               <Tooltip formatter={(v: number) => `${v}%`} />
               <Bar dataKey="count" radius={[0, 4, 4, 0]} name={t('consume')}>
                 {mostConsumed.map((_, i) => (
@@ -143,10 +147,10 @@ export default function Analytics() {
 
       <section className="fade-in-up-delay-3 space-y-3">
         <h3 className="font-display text-lg font-semibold">{t('highestWaste')}</h3>
-        <div className="rounded-xl border bg-card p-4 shadow-sm space-y-3">
+        <div className="space-y-3 rounded-xl border bg-card p-3 shadow-sm sm:p-4">
           {mostWasted.map((item, i) => (
             <div key={item.name} className="flex items-center gap-3">
-              <span className="w-20 text-sm font-medium truncate">{item.name}</span>
+              <span className="w-20 shrink-0 truncate text-sm font-medium">{item.name}</span>
               <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all"
@@ -163,12 +167,12 @@ export default function Analytics() {
         <h3 className="font-display text-lg font-semibold">{t('itemInsights')}</h3>
         <div className="space-y-2">
           {purchaseFrequency.map(pf => (
-            <div key={pf.item} className="flex items-center justify-between rounded-xl border bg-card p-3 shadow-sm">
-              <div>
+            <div key={pf.item} className="flex items-start justify-between gap-3 rounded-xl border bg-card p-3 shadow-sm sm:items-center">
+              <div className="min-w-0">
                 <p className="font-medium">{pf.item}</p>
                 <p className="text-xs text-muted-foreground">{t('shelfLife')}: ~{pf.avgDays} {t('daysLeft')}</p>
               </div>
-              <div className="text-right">
+              <div className="shrink-0 text-right">
                 <p className={`text-sm font-semibold ${pf.wastePercent > 20 ? 'text-destructive' : 'text-success'}`}>
                   {pf.wastePercent}% {t('unused')}
                 </p>

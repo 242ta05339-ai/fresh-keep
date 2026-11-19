@@ -27,30 +27,30 @@ export default function Dashboard() {
         <p className="text-muted-foreground">{t('fridgeToday')}</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 fade-in-up-delay-1">
-        <div className="rounded-xl border bg-card p-4 shadow-sm">
-          <Package className="h-5 w-5 text-primary mb-1" />
-          <p className="text-2xl font-semibold tabular-nums">{items.length}</p>
-          <p className="text-xs text-muted-foreground">{t('totalItems')}</p>
+      <div className="grid grid-cols-3 gap-2 fade-in-up-delay-1 sm:gap-3">
+        <div className="min-w-0 rounded-xl border bg-card p-3 shadow-sm sm:p-4">
+          <Package className="mb-1 h-4 w-4 text-primary sm:h-5 sm:w-5" />
+          <p className="text-xl font-semibold tabular-nums sm:text-2xl">{items.length}</p>
+          <p className="text-[11px] leading-tight text-muted-foreground sm:text-xs">{t('totalItems')}</p>
         </div>
-        <div className="rounded-xl border bg-card p-4 shadow-sm">
-          <AlertTriangle className="h-5 w-5 text-warning mb-1" />
-          <p className="text-2xl font-semibold tabular-nums">{expiringCount}</p>
-          <p className="text-xs text-muted-foreground">{t('expiringSoon')}</p>
+        <div className="min-w-0 rounded-xl border bg-card p-3 shadow-sm sm:p-4">
+          <AlertTriangle className="mb-1 h-4 w-4 text-warning sm:h-5 sm:w-5" />
+          <p className="text-xl font-semibold tabular-nums sm:text-2xl">{expiringCount}</p>
+          <p className="text-[11px] leading-tight text-muted-foreground sm:text-xs">{t('expiringSoon')}</p>
         </div>
-        <div className="rounded-xl border bg-card p-4 shadow-sm">
-          <TrendingDown className="h-5 w-5 text-success mb-1" />
-          <p className="text-2xl font-semibold tabular-nums">{sustainability.wastePercentage}%</p>
-          <p className="text-xs text-muted-foreground">{t('wasteRate')}</p>
+        <div className="min-w-0 rounded-xl border bg-card p-3 shadow-sm sm:p-4">
+          <TrendingDown className="mb-1 h-4 w-4 text-success sm:h-5 sm:w-5" />
+          <p className="text-xl font-semibold tabular-nums sm:text-2xl">{sustainability.wastePercentage}%</p>
+          <p className="text-[11px] leading-tight text-muted-foreground sm:text-xs">{t('wasteRate')}</p>
         </div>
       </div>
 
-      <div className="fade-in-up-delay-2 flex items-center gap-3 rounded-xl border bg-card p-4 shadow-sm">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-2xl">
+      <div className="fade-in-up-delay-2 flex items-center gap-3 rounded-xl border bg-card p-3 shadow-sm sm:p-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary text-2xl sm:h-12 sm:w-12">
           {TIER_EMOJI[sustainability.tier] || '🥉'}
         </div>
-        <div>
-          <p className="font-medium capitalize">{sustainability.tier} {t('tier')} — {sustainability.score}/100</p>
+        <div className="min-w-0">
+          <p className="break-words text-sm font-medium capitalize sm:text-base">{sustainability.tier} {t('tier')} — {sustainability.score}/100</p>
           <p className="text-sm text-muted-foreground">
             {sustainability.streakDays}-{t('dayStreak')} · {sustainability.itemsSaved} {t('itemsSaved')}
           </p>
